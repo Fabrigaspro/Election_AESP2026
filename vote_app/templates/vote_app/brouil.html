@@ -1,0 +1,2836 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Élections AESP - South Polytech</title>
+    <style>
+        /* --- Styles Généraux --- */
+        :root {
+            --primary-color: #24284B; /* Bleu foncé Polytech */
+            --secondary-color: #E87722; /* Orange Polytech */
+            --light-gray: #f4f4f4;
+            --dark-gray: #333;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --pending-color: #ffc107;
+        }
+
+        @import url('https://fonts.googleapis.com/css?family=Poppins:400,500,600,700&display=swap');
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            padding: 0 20px;
+            overflow: hidden;
+        }
+
+        header {
+            background: var(--primary-color);
+            color: #fff;
+            padding: 0 0;
+            text-align: center;
+            border: 5px solid var(--secondary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            margin-right: 0rem;
+            background: #fff;
+        }
+
+        .logo {
+            height: 100px;
+            width: auto;
+        }
+
+        header h1 {
+            margin-bottom: 0.5rem;
+            margin-bottom: 0;
+        }
+
+        main {
+            padding: 2rem 0;
+            min-height: calc(100vh - 200px);
+        }
+
+        footer {
+            text-align: center;
+            padding: 1rem;
+            background: var(--dark-gray);
+            color: #fff;
+            position: relative;
+            bottom: 0;
+            width: 100%;
+            margin-top: 2rem;
+        }
+
+        /* --- Vues de l'application --- */
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        /* --- Styles pour les Loaders --- */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+        
+        .loader-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            min-width: 200px;
+        }
+        
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--light-gray);
+            border-top: 5px solid var(--secondary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        .loader-text {
+            color: var(--dark-gray);
+            font-size: 1rem;
+            font-weight: 500;
+            margin: 0;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Désactiver les boutons pendant le loading */
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* --- Styles des formulaires et boutons --- */
+        .form-container {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: 1rem auto;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .form-group input[type="file"] {
+            padding: 0.5rem;
+        }
+
+        .file-preview {
+            max-width: 100px;
+            max-height: 100px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .btn {
+            display: inline-block;
+            background: var(--secondary-color);
+            color: #fff;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 1rem;
+            text-align: center;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #d46a1e;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+        }
+        .btn-primary:hover {
+            background: #002244;
+        }
+
+        .btn-success { background: var(--success-color); }
+        .btn-danger { background: var(--error-color); }
+        .btn-warning { background: var(--pending-color); }
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+
+        .toggle-link {
+            color: var(--primary-color);
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 1rem;
+            display: inline-block;
+        }
+
+        /* --- Styles des Tableaux de Bord --- */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .dashboard-header h2 {
+            color: var(--primary-color);
+        }
+
+        .card {
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .card h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--light-gray);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        /* --- Interface Admin --- */
+        .admin-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .admin-nav .btn {
+            flex-grow: 1;
+            position: relative;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        /* Style pour le bouton actif */
+        .admin-nav .btn.active {
+            background: var(--secondary-color);
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(232, 119, 34, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Effet de surbrillance pour le bouton actif */
+        .admin-nav .btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 3px;
+            background: var(--primary-color);
+            border-radius: 2px;
+        }
+
+        /* Effet de hover pour les boutons non actifs */
+        .admin-nav .btn:not(.active):hover {
+            background: #d46a1e;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .admin-content {
+            display: none;
+        }
+        .admin-content.active {
+            display: block;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+        .list-item:nth-child(even) {
+            background: var(--light-gray);
+        }
+
+        .status-pending {
+            color: var(--pending-color);
+            font-weight: bold;
+        }
+        .status-validated {
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        /* --- Badges de Bureau pour les Candidats --- */
+        .bureau-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        /* Icônes pour les badges */
+        .bureau-badge i {
+            margin-right: 4px;
+            font-size: 0.6rem;
+        }
+        
+        /* Ajustement pour le badge de sélection quand il y a un badge de bureau */
+        .candidate-card:has(.bureau-badge) .selection-badge {
+            top: 10px;
+            right: 10px;
+        }
+        
+        /* Style pour l'aperçu de couleur dans le formulaire */
+        .color-preview {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            border: 2px solid #ddd;
+            display: inline-block;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        /* --- Interface de Vote AMÉLIORÉE --- */
+        .candidates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        
+        .candidate-card {
+            text-align: center;
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+            max-width: 100%; /* Empêche le débordement horizontal */
+            word-wrap: break-word; /* Force le retour à la ligne */
+        }
+        
+        .candidate-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+        }
+        
+        .candidate-card.selected {
+            border-color: var(--success-color);
+            background: linear-gradient(135deg, #fff, #f8fff8);
+        }
+        
+        .candidate-card img {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--primary-color);
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            margin-top: 35px;
+        }
+        
+        .candidate-card.selected img {
+            border-color: var(--success-color);
+            transform: scale(1.05);
+        }
+        
+        .candidate-card h4 {
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+            font-size: 1.3rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto; /* Césure des mots longs */
+        }
+        
+        /* CORRECTION PLEINE LARGEUR POUR LES INFORMATIONS */
+        .candidate-info {
+            text-align: left;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: var(--light-gray);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            width: 100%; /* Prend toute la largeur */
+            box-sizing: border-box; /* Inclut le padding dans la largeur */
+        }
+        
+        .candidate-info p {
+            margin: 0.3rem 0;
+            display: flex;
+            align-items: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            min-width: 0; /* Permet au flex de bien fonctionner */
+        }
+        
+        .candidate-info i {
+            margin-right: 0.5rem;
+            color: var(--secondary-color);
+            width: 16px;
+            flex-shrink: 0; /* Empêche l'icône de rétrécir */
+        }
+        
+        /* Style pour le texte des informations */
+        .candidate-info strong {
+            flex-shrink: 0; /* Empêche le label de rétrécir */
+            margin-right: 0.3rem;
+        }
+        
+        .candidate-info span {
+            flex: 1; /* Prend l'espace restant */
+            min-width: 0; /* Permet au texte de se casser */
+            word-break: break-word; /* Force la césure des mots longs */
+        }
+        
+        /* CORRECTION PLEINE LARGEUR POUR LE SLOGAN */
+        .slogan {
+            font-style: italic;
+            color: var(--secondary-color);
+            margin: 1rem 0;
+            padding: 0.8rem;
+            background: linear-gradient(135deg, #fff3e0, #ffecb3);
+            border-radius: 6px;
+            border-left: 4px solid var(--secondary-color);
+            width: 100%; /* Prend toute la largeur */
+            box-sizing: border-box; /* Inclut le padding dans la largeur */
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+        }
+        
+        .vote-btn {
+            background: var(--success-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            width: 100%;
+            box-sizing: border-box; /* Important pour la largeur 100% */
+        }
+        
+        .vote-btn:hover {
+            background: #218838;
+            transform: scale(1.05);
+        }
+        
+        .vote-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .selection-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--success-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: none;
+        }
+        
+        .candidate-card.selected .selection-badge {
+            display: block;
+        }
+
+        .vote-instructions {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .vote-instructions h3 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Styles pour les boutons de contrôle d'élection */
+        #electionControlButtons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        
+        #electionControlButtons .btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            font-weight: 500;
+        }
+        
+        /* Style spécifique pour le bouton de réinitialisation */
+        .btn-warning {
+            background: var(--pending-color);
+            border: none;
+            color: #000;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+            color: #000;
+        }
+        
+        /* Section des statistiques */
+        #electionStats {
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .warning-message {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+        /* --- Formulaire d'ajout de candidat amélioré --- */
+        .candidate-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .candidate-form-grid .form-group {
+            margin-bottom: 0;
+        }
+
+        /* --- Résultats --- */
+        .result-bar-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin: 5px 0 15px 0;
+        }
+
+        .result-bar {
+            height: 25px;
+            background-color: var(--success-color);
+            border-radius: 4px;
+            text-align: right;
+            padding-right: 5px;
+            line-height: 25px;
+            color: white;
+            transition: width 0.5s ease-in-out;
+        }
+
+        /* --- Styles pour les messages de confirmation --- */
+        .confirmation-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .confirmation-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .confirmation-success {
+            border: 3px solid var(--success-color);
+        }
+
+        .confirmation-error {
+            border: 3px solid var(--error-color);
+        }
+
+        .confirmation-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .confirmation-success .confirmation-title {
+            color: var(--success-color);
+        }
+
+        .confirmation-error .confirmation-title {
+            color: var(--error-color);
+        }
+
+        .confirmation-message {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .confirmation-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .confirmation-button:hover {
+            background: #002244;
+        }
+
+        /* --- Utilitaires --- */
+        .text-center {
+            text-align: center;
+        }
+        .message {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+        }
+        .message-success { background-color: #d4edda; color: #155724; }
+        .message-error { background-color: #f8d7da; color: #721c24; }
+        .message-info { background-color: #cce5ff; color: #004085; }
+        .message-warning { background-color: #fff3cd; color: #856404; }
+
+        /* --- Responsive Design --- */
+        @media (max-width: 854px) {
+            .logo {
+                height: 54px;
+                width: auto;
+            }
+
+            header h1 {
+                margin-bottom: 0.5rem;
+                font-size: 22px;
+                margin-bottom: 0;
+            }
+            header p {
+                margin-bottom: 0.5rem;
+                font-size: 10px;
+            }
+
+        }
+        @media (max-width: 580px) {
+            .logo {
+                height: 50px;
+                width: auto;
+            }
+
+            header h1 {
+                margin-bottom: 0.5rem;
+                font-size: 18px;
+                margin-bottom: 0;
+            }
+            header p {
+                margin-bottom: 0.5rem;
+                font-size: 10px;
+            }
+            .dashboard-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            .list-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            .list-item > div:last-child {
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+            .list-item .btn {
+                width: 100%;
+            }
+            .admin-nav {
+                flex-direction: column;
+            }
+            .candidates-grid {
+                grid-template-columns: 1fr;
+            }
+            .candidate-form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 492px) {
+            .logo {
+                height: 47px;
+                width: auto;
+            }
+
+            header h1 {
+                margin-bottom: 0.5rem;
+                font-size: 16px;
+                margin-bottom: 0;
+            }
+            header p {
+                margin-bottom: 0.5rem;
+                font-size: 10px;
+            }
+            
+            .candidates-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .candidate-card {
+                padding: 1rem;
+                margin: 0 0.5rem;
+            }
+            
+            .candidate-card img {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .candidate-card h4 {
+                font-size: 1.1rem;
+            }
+            
+            .candidate-info {
+                padding: 0.8rem;
+                font-size: 0.85rem;
+            }
+            
+            .candidate-info p {
+                flex-direction: column;
+                align-items: flex-start;
+                text-align: left;
+            }
+            
+            .candidate-info i {
+                margin-bottom: 0.2rem;
+            }
+            
+            .slogan {
+                padding: 0.6rem;
+                font-size: 0.9rem;
+            }
+
+        }
+        @media (max-width: 447px) {
+            .logo {
+                height: 54px;
+                width: auto;
+            }
+
+            header h1 {
+                margin-bottom: 0.5rem;
+                font-size: 13px;
+                margin-bottom: 0;
+            }
+            header p {
+                margin-bottom: 0.5rem;
+                font-size: 10px;
+            }
+            footer p {
+                font-size: 12px;
+            }
+
+        }
+        @media (max-width: 401px) {
+            .logo {
+                height: 45px;
+                width: auto;
+            }
+
+            header h1 {
+                margin-bottom: 0.5rem;
+                font-size: 11px;
+                margin-bottom: 0;
+            }
+            header p {
+                margin-bottom: 0.5rem;
+                font-size: 8px;
+            }
+
+        }
+        @media (max-width: 347px) {
+            .logo {
+                height: 34px;
+                width: auto;
+            }
+
+            header h1 {
+                margin-bottom: 0.5rem;
+                font-size: 11px;
+                margin-bottom: 0;
+            }
+            header p {
+                margin-bottom: 0.5rem;
+                font-size: 8px;
+            }
+            footer p {
+                font-size: 10px;
+            }
+
+        }
+        @media (max-width: 326px) {
+            .logo {
+                height: 30px;
+                width: auto;
+            }
+
+            header h1 {
+                margin-bottom: 0.5rem;
+                font-size: 10px;
+                margin-bottom: 0;
+            }
+            header p {
+                margin-bottom: 0.5rem;
+                font-size: 8px;
+            }
+
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Loaders pour les différentes opérations -->
+    <div id="globalLoader" class="loader-overlay" style="display: none;">
+        <div class="loader-container">
+            <div class="loader-spinner"></div>
+            <p class="loader-text">Chargement...</p>
+        </div>
+    </div>
+    
+    <div id="pageLoadLoader" class="loader-overlay" style="display: none;">
+        <div class="loader-container">
+            <div class="loader-spinner"></div>
+            <p class="loader-text">Chargement de l'application...</p>
+        </div>
+    </div>
+    
+    <div id="loginLoader" class="loader-overlay" style="display: none;">
+        <div class="loader-container">
+            <div class="loader-spinner"></div>
+            <p class="loader-text">Connexion en cours...</p>
+        </div>
+    </div>
+    
+    <div id="registerLoader" class="loader-overlay" style="display: none;">
+        <div class="loader-container">
+            <div class="loader-spinner"></div>
+            <p class="loader-text">Inscription en cours...</p>
+        </div>
+    </div>
+    
+    <div id="voteLoader" class="loader-overlay" style="display: none;">
+        <div class="loader-container">
+            <div class="loader-spinner"></div>
+            <p class="loader-text">Enregistrement de votre vote...</p>
+        </div>
+    </div>
+
+    <div id="registerCandidat" class="loader-overlay" style="display: none;">
+        <div class="loader-container">
+            <div class="loader-spinner"></div>
+            <p class="loader-text">Enregistrement du candidat...</p>
+        </div>
+    </div>
+    <div id="deleteCandidat" class="loader-overlay" style="display: none;">
+        <div class="loader-container">
+            <div class="loader-spinner"></div>
+            <p class="loader-text">Supression du candidat...</p>
+        </div>
+    </div>
+
+    <header>
+        <div class="logo-container">
+            <img src="{% static 'vote_app/images/AESP.png' %}" alt="Logo AESP" class="logo">
+        </div>
+        <div class="container">
+            <h1>Élections du Bureau de l'AESP 2025/2026</h1>
+            <p>Association des Étudiants de South Polytech</p>
+        </div>
+        <div class="logo-container">
+            <img src="{% static 'vote_app/images/SP.png' %}" alt="Logo SP" class="logo">
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Boîtes de confirmation -->
+        <div id="successConfirmation" class="confirmation-overlay">
+            <div class="confirmation-box confirmation-success">
+                <div class="confirmation-title">✅ Inscription Réussie !</div>
+                <div class="confirmation-message">
+                    Votre inscription a été enregistrée avec succès.<br>
+                    Votre compte est en attente de validation par un administrateur.
+                </div>
+                <button class="confirmation-button" onclick="hideConfirmation('success')">OK</button>
+            </div>
+        </div>
+
+        <div id="errorConfirmation" class="confirmation-overlay">
+            <div class="confirmation-box confirmation-error">
+                <div class="confirmation-title">❌ Erreur d'Inscription</div>
+                <div class="confirmation-message" id="errorMessage">
+                    Une erreur est survenue lors de l'inscription.
+                </div>
+                <button class="confirmation-button" onclick="hideConfirmation('error')">OK</button>
+            </div>
+        </div>
+
+        <!-- Vue de Connexion / Inscription -->
+        <div id="authView" class="view">
+            <div class="logo-container text-center" style="justify-content: center; margin-bottom: 1rem;">
+                <img src="{% static 'vote_app/images/IUGET.png' %}" alt="Logo AESP" class="logo">
+            </div>
+            <div id="loginFormContainer" class="form-container">
+                <h2>Connexion</h2>
+                <form id="loginForm">
+                    <div id="loginError" class="message message-error" style="display: none;"></div>
+                    <div class="form-group">
+                        <label for="loginMatricule">Matricule</label>
+                        <input type="text" id="loginMatricule" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Mot de passe</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
+                </form>
+                <p class="text-center">Pas encore de compte ? <span id="showRegister" class="toggle-link">S'inscrire</span></p>
+            </div>
+
+            <div id="registerFormContainer" class="form-container" style="display: none;">
+                <h2>Inscription Étudiant</h2>
+                <form id="registerForm">
+                    <div id="registerError" class="message message-error" style="display: none;"></div>
+                    <div id="registerSuccess" class="message message-success" style="display: none;"></div>
+                    <div class="form-group">
+                        <label for="registerNom">Nom</label>
+                        <input type="text" id="registerNom" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPrenom">Prénom</label>
+                        <input type="text" id="registerPrenom" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerMatricule">Matricule scolaire</label>
+                        <input type="text" id="registerMatricule" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerCycle">Cycle</label>
+                        <select id="registerCycle" required>
+                            <option value="" disabled selected>Sélectionnez votre cycle</option>
+                            <option value="bts">BTS</option>
+                            <option value="hnd">HND</option>
+                            <option value="lipro">Licence Professionnelle</option>
+                            <option value="litech">Licence de Technologie</option>
+                            <option value="bachelor">Bachelor of Technology</option>
+                            <option value="master">Master</option>
+                            <option value="ingenieur">Ingénieur</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerSpecialite">Spécialité</label>
+                        <select id="registerSpecialite" required disabled>
+                            <option value="" disabled selected>Sélectionnez d'abord le cycle</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerNiveau">Niveau</label>
+                        <select id="registerNiveau" required disabled>
+                            <option value="" disabled selected>Sélectionnez d'abord le cycle</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerCampus">Campus</label>
+                        <select id="registerCampus" required disabled>
+                            <option value="" disabled selected>Sélectionnez d'abord le cycle</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Mot de passe</label>
+                        <input type="password" id="registerPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerConfirmPassword">Confirmer le mot de passe</label>
+                        <input type="password" id="registerConfirmPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPhoto">Photo de profil</label>
+                        <input type="file" id="registerPhoto" accept="image/*" required>
+                        <img id="photoPreview" class="file-preview">
+                    </div>
+                    <div class="form-group">
+                        <label for="registerRecu">Photo du reçu de paiement des frais d'inscription</label>
+                        <input type="file" id="registerRecu" accept="image/*" required>
+                        <img id="recuPreview" class="file-preview">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">S'inscrire</button>
+                </form>
+                <p class="text-center">Déjà un compte ? <span id="showLogin" class="toggle-link">Se connecter</span></p>
+            </div>
+        </div>
+
+        <!-- Vue Étudiant - En attente de validation -->
+        <div id="studentPendingView" class="view">
+            <div class="card text-center">
+                <h2>Bienvenue !</h2>
+                <div class="message message-warning">
+                    <p>Votre inscription est en attente de validation par un administrateur.</p>
+                    <p>Veuillez patienter. Vous serez notifié(e) lorsque votre compte sera activé.</p>
+                </div>
+                <button id="logoutBtnPending" class="btn">Se déconnecter</button>
+            </div>
+        </div>
+
+        <!-- Vue Étudiant - Vote -->
+        <div id="studentVoteView" class="view">
+            <div class="dashboard-header">
+                <h2 id="studentWelcomeMsg"></h2>
+                <button id="logoutBtnVote" class="btn">Se déconnecter</button>
+            </div>
+            
+            <div class="vote-instructions">
+                <h3><i class="fas fa-vote-yea"></i> Élection du Bureau de l'AESP 2025/2026</h3>
+                <p>Choisissez votre candidat préféré en cliquant sur sa carte. Vous ne pourrez voter qu'une seule fois !</p>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-users"></i> Liste des Candidats</h3>
+                <div id="electionStatusMessage"></div>
+                <div id="selectedCandidateInfo" class="message message-info" style="display: none; text-align: center;">
+                    <strong>Candidat sélectionné : </strong><span id="selectedCandidateName"></span>
+                    <button id="confirmVoteBtn" class="btn btn-success" style="margin-left: 1rem;">
+                        <i class="fas fa-check"></i> Confirmer mon vote
+                    </button>
+                </div>
+                <div id="candidatesForVote" class="candidates-grid">
+                    <!-- Les candidats seront injectés ici par JS -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Vue Étudiant - A déjà voté -->
+        <div id="studentVotedView" class="view">
+            <div class="card text-center">
+                <h2 id="studentWelcomeVotingMsg"> </h2>
+                <div class="message message-success" id="studentViewResults">
+                    <p>Votre vote a été enregistrée avec succès.</p>
+                    <p>Les résultats seront annoncés à la fin de la période de vote.</p>
+                </div>
+                <button id="logoutBtnVoted" class="btn">Se déconnecter</button>
+            </div>
+            <div class="card">
+                <h3>Résultats de l'élection</h3>
+                <div id="resultsContainerEtudiant">
+                    <div class="message message-info"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vue Administrateur AMÉLIORÉE -->
+        <div id="adminDashboardView" class="view">
+            <div class="dashboard-header">
+                <h2>Tableau de Bord Administrateur</h2>
+                <button id="logoutBtnAdmin" class="btn">Se déconnecter</button>
+            </div>
+            
+            <nav class="admin-nav">
+                <button class="btn btn-primary admin-nav-btn" data-target="validationContent">Validation des Inscriptions</button>
+                <button class="btn btn-primary admin-nav-btn" data-target="usersContent">Gestion des Étudiants</button>
+                <button class="btn btn-primary admin-nav-btn" data-target="candidatesContent">Gestion des Candidats</button>
+                <button class="btn btn-primary admin-nav-btn" data-target="electionContent">Gestion de l'Élection</button>
+                <button class="btn btn-primary admin-nav-btn" data-target="resultsContent">Voir les Résultats</button>
+            </nav>
+
+            <!-- Contenu Admin: Validation -->
+            <div id="validationContent" class="admin-content card">
+                <h3>Étudiants en attente de validation</h3>
+                <div id="pendingUsersList"></div>
+            </div>
+
+            <!-- Contenu Admin: Gestion des candidats AMÉLIORÉE -->
+            <div id="candidatesContent" class="admin-content card">
+                <h3><i class="fas fa-user-plus"></i> Ajouter un candidat</h3>
+                <form id="addCandidateForm">
+                    <div class="candidate-form-grid">
+                        <div class="form-group">
+                            <label for="candidateNom">Nom</label>
+                            <input type="text" id="candidateNom" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="candidatePrenom">Prénom</label>
+                            <input type="text" id="candidatePrenom" required>
+                        </div>
+                    </div>
+                    <div class="candidate-form-grid">
+                        <div class="form-group">
+                            <label for="candidateCycle">Cycle</label>
+                            <select id="candidateCycle" required>
+                                <option value="" disabled selected>Sélectionnez votre cycle</option>
+                                <option value="bts">BTS</option>
+                                <option value="hnd">HND</option>
+                                <option value="lipro">Licence Professionnelle</option>
+                                <option value="litech">Licence de Technologie</option>
+                                <option value="bachelor">Bachelor of Technology</option>
+                                <option value="master">Master</option>
+                                <option value="ingenieur">Ingénieur</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="candidateSpecialite">Spécialité</label>
+                            <select id="candidateSpecialite" required disabled>
+                                <option value="" disabled selected>Sélectionnez d'abord le cycle</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="candidate-form-grid"> 
+                        <div class="form-group">
+                            <label for="candidateNiveau" >Niveau</label>
+                            <select id="candidateNiveau" required disabled>
+                                <option value="" disabled selected>Sélectionnez d'abord le cycle</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="candidateCampus">Campus</label>
+                            <select id="candidateCampus" required disabled>
+                                <option value="" disabled selected>Sélectionnez d'abord le cycle</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="candidate-form-grid">
+                        <div class="form-group">
+                            <label for="candidateBureau">Nom du Bureau</label>
+                            <input type="text" id="candidateBureau" required placeholder="Ex: Bureau du renouveau">
+                        </div>
+                        <div class="form-group">
+                            <label for="candidateSlogan">Slogan de campagne</label>
+                            <input type="text" id="candidateSlogan" required placeholder="Ex: L'avenir ensemble !">
+                        </div>
+                    </div>
+                    <div class="candidate-form-grid">
+                        <div class="form-group">
+                            <label for="candidateProgramme_pdf">Programme de campagne PDF</label>
+                            <input type="file" id="candidateProgramme_pdf" name="candidateProgramme_pdf" 
+                                   accept=".pdf" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="candidateCouleur">Couleur du Bureau</label>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <input type="color" id="candidateCouleur" value="#3498db" required 
+                                       style="width: 60px; height: 40px; border: none; border-radius: 4px; cursor: pointer;">
+                                <span id="candidateCouleurText" style="font-size: 14px; color: #666;">#3498db</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="candidatePhoto">Photo du candidat</label>
+                        <input type="file" id="candidatePhoto" accept="image/*" required>
+                        <img id="candidatePhotoPreview" class="file-preview">
+                    </div>                    
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Ajouter le candidat
+                    </button>
+                </form>
+                <hr style="margin: 2rem 0;">
+                <h3><i class="fas fa-list"></i> Candidats actuels</h3>
+                <div id="candidatesList"></div>
+            </div>
+ 
+            <!-- Contenu Admin: Gestion de l'élection -->
+            <div id="electionContent" class="admin-content card">
+             <h3>Statut de l'élection</h3>
+             <p>Statut actuel : <strong id="electionStatusAdmin"></strong></p>
+             <br>
+             <div id="electionControlButtons">
+                 <button id="startElectionBtn" class="btn btn-success">
+                     <i class="fas fa-play"></i> Démarrer l'élection
+                 </button>
+                 <button id="stopElectionBtn" class="btn btn-danger">
+                     <i class="fas fa-stop"></i> Terminer l'élection
+                 </button>
+                 <button id="resetElectionBtn" class="btn btn-warning">
+                     <i class="fas fa-redo"></i> Réinitialiser l'élection
+                 </button>
+             </div>
+             
+             <!-- Section des statistiques -->
+             <div id="electionStats" style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; display: none;">
+                 <h4><i class="fas fa-chart-bar"></i> Statistiques</h4>
+                 <div id="statsContent">
+                     <!-- Les statistiques seront injectées ici -->
+                 </div>
+             </div>
+            </div>
+
+            <!-- Contenu Admin: Résultats -->
+            <div id="resultsContent" class="admin-content card">
+                <h3>Résultats de l'élection</h3>
+                <div id="resultsContainer">SSKSKSK</div>
+            </div>
+
+            <!-- Contenu Admin: Gestion des utilisateurs -->
+            <div id="usersContent" class="admin-content card">
+                <h3>Gestion des Étudiants</h3>
+                <h4>Liste des Étudiants inscrits à l'AESP</h4>
+                <div id="usersList"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 AESP - South Polytech. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <script>
+        function hideConfirmation(type) {
+            if (type === 'success') {
+                document.getElementById('successConfirmation').style.display = 'none';
+            } else if (type === 'error') {
+                console.log("offffffff")
+                document.getElementById('errorConfirmation').style.display = 'none';
+            }
+        }
+    document.addEventListener('DOMContentLoaded', () => {
+        showLoader('pageLoadLoader');
+
+        // =================================================================
+        // ÉLÉMENTS DU DOM
+        // =================================================================
+        const views = document.querySelectorAll('.view');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const showRegister = document.getElementById('showRegister');
+        const showLogin = document.getElementById('showLogin');
+        const loginError = document.getElementById('loginError');
+        const registerError = document.getElementById('registerError');
+        const registerSuccess = document.getElementById('registerSuccess');
+        const logoutButtons = document.querySelectorAll('#logoutBtnPending, #logoutBtnVote, #logoutBtnVoted, #logoutBtnAdmin');
+        const studentWelcomeMsg = document.getElementById('studentWelcomeMsg');
+        const studentWelcomeVotingMsg = document.getElementById('studentWelcomeVotingMsg');
+        const studentViewResults = document.getElementById('studentViewResults');
+        const secondParagraph = studentViewResults.querySelector('p:nth-child(2)');
+        const candidatesForVote = document.getElementById('candidatesForVote');
+        const electionStatusMessage = document.getElementById('electionStatusMessage');
+        const adminNavButtons = document.querySelectorAll('.admin-nav-btn');
+        const adminContents = document.querySelectorAll('.admin-content');
+        const pendingUsersList = document.getElementById('pendingUsersList');
+        const addCandidateForm = document.getElementById('addCandidateForm');
+        const candidatesList = document.getElementById('candidatesList');
+        const electionStatusAdmin = document.getElementById('electionStatusAdmin');
+        const startElectionBtn = document.getElementById('startElectionBtn');
+        const stopElectionBtn = document.getElementById('stopElectionBtn');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const resultsContainerEtudiant = document.getElementById('resultsContainerEtudiant');
+        const usersList = document.getElementById('usersList');
+        const photoPreview = document.getElementById('photoPreview');
+        const recuPreview = document.getElementById('recuPreview');
+        const registerPhoto = document.getElementById('registerPhoto');
+        const registerRecu = document.getElementById('registerRecu');
+        const loginFormContainer = document.getElementById('loginFormContainer');
+        const registerFormContainer = document.getElementById('registerFormContainer');
+        const selectedCandidateInfo = document.getElementById('selectedCandidateInfo');
+        const selectedCandidateName = document.getElementById('selectedCandidateName');
+        const confirmVoteBtn = document.getElementById('confirmVoteBtn');
+        const candidatePhotoPreview = document.getElementById('candidatePhotoPreview');
+        const candidatePhoto = document.getElementById('candidatePhoto');
+        const candidateProgramme_pdf = document.getElementById('candidateProgramme_pdf');
+
+        // =================================================================
+        // FONCTIONS POUR LES LOADERS
+        // =================================================================
+        
+        function showLoader(loaderId) {
+            document.getElementById(loaderId).style.display = 'flex';
+        }
+        
+        function hideLoader(loaderId) {
+            console.log('Cacher dans hideLoader avec loaderId = ', loaderId);
+
+            document.getElementById(loaderId).style.display = 'none';
+        }
+        
+        function disableButtons(buttons) {
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+                btn.style.cursor = 'not-allowed';
+            });
+        }
+        
+        function enableButtons(buttons) {
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            });
+        }
+
+        // Remplacer les appels directs aux loaders par cette fonction
+        function manageLoaders(action, loaderId = null) {
+            const loaders = ['pageLoadLoader', 'loginLoader', 'registerLoader', 'voteLoader', 'registerCandidat', 'deleteCandidat'];
+            
+            if (action === 'hideAll') {
+                loaders.forEach(loader => hideLoader(loader));
+            } else if (action === 'show' && loaderId) {
+                // Cacher tous les autres loaders avant d'afficher celui demandé
+                loaders.forEach(loader => {
+                    if (loader !== loaderId) hideLoader(loader);
+                });
+                showLoader(loaderId);
+            } else if (action === 'hide' && loaderId) {
+                hideLoader(loaderId);
+            }
+        }
+
+        // =================================================================
+        // VARIABLES GLOBALES
+        // =================================================================
+        let selectedCandidateId = null;
+        let state = {
+            currentUser: null,
+            candidates: [],
+            electionStatus: 'pending',
+            pendingUsers: [],
+            allUsers: []
+        };
+
+        // Variables pour le rafraîchissement automatique
+        let refreshInterval = null;
+        const REFRESH_INTERVAL = 10000; // 10 secondes
+        let lastUpdateTimestamp = Date.now();
+
+        // =================================================================
+        // SYSTÈME DE RAFRAÎCHISSEMENT AUTOMATIQUE - AJOUTEZ CES FONCTIONS
+        // =================================================================
+
+        // Fonction pour démarrer le rafraîchissement automatique
+        function startAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+            
+            refreshInterval = setInterval(async () => {
+                try {
+                    await checkForUpdates();
+                } catch (error) {
+                    console.log('Erreur lors du rafraîchissement:', error);
+                }
+            }, REFRESH_INTERVAL);
+            
+            console.log('🔄 Rafraîchissement automatique activé');
+        }
+        
+        // Fonction pour arrêter le rafraîchissement automatique
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+                console.log('⏹️ Rafraîchissement automatique désactivé');
+            }
+        }
+        
+        // Fonction pour vérifier les mises à jour
+        async function checkForUpdates() {
+            try {
+                const data = await apiFetch('/api/dashboard_data/');
+                const currentTimestamp = Date.now();
+                
+                // Vérifier si les données ont changé
+                const hasChanges = hasDataChanged(data);
+                
+                if (hasChanges) {
+                    console.log('🔄 Données mises à jour détectées');
+                    
+                    // Mettre à jour l'état
+                    state.currentUser = data.user;
+                    state.candidates = data.candidates;
+                    state.electionStatus = data.election_status;
+                    state.pendingUsers = data.pending_users;
+                    state.allUsers = data.all_users;
+                    lastUpdateTimestamp = currentTimestamp;
+                    
+                    // Rafraîchir l'interface selon la vue active  checkSession
+                    refreshCurrentView();
+                }
+            } catch (error) {
+                console.log('Erreur lors de la vérification des mises à jour:', error);
+                // En cas d'erreur, arrêter le rafraîchissement automatique
+                stopAutoRefresh();
+            }
+        }
+        
+        // Fonction pour détecter les changements dans les données
+        function hasDataChanged(newData) {
+            // Vérifier les candidats
+            if (state.candidates.length !== newData.candidates.length) {
+                return true;
+            }
+            
+            // Vérifier les votes des candidats
+            for (let i = 0; i < state.candidates.length; i++) {
+                if (state.candidates[i].votes !== newData.candidates[i].votes) {
+                    return true;
+                }
+            }
+            
+            // Vérifier le statut de l'élection
+            console.log("// Vérifier le statut de l'élection")
+            console.log("state.electionStatus !== newData.election_status : ", state.electionStatus !== newData.election_status)
+            if (state.electionStatus !== newData.election_status) {
+                return true;
+            }
+            
+            // Vérifier les utilisateurs en attente
+            if (state.pendingUsers.length !== newData.pending_users.length) {
+                return true;
+            }
+            
+            // Vérifier les utilisateurs validés
+            if (state.allUsers.length !== newData.all_users.length) {
+                return true;
+            }
+            
+            return false;
+        }
+        
+        // Fonction pour rafraîchir la vue actuelle
+        function refreshCurrentView() {
+            const activeView = document.querySelector('.view.active');
+            console.log("Je viens dans refreshCurrentView avec activeView = ", activeView)
+            if (!activeView) return;
+            
+            const viewId = activeView.id;
+            
+            switch(viewId) {
+                case 'adminDashboardView':
+                    renderAdminDashboard();
+                    break;
+                    
+                case 'studentVoteView':
+                    renderStudentVoteView();
+                    renderResults();
+                    break;
+                    
+                case 'studentVotedView':
+                    // Juste mettre à jour le message de bienvenue si nécessaire
+                    if (state.currentUser) {
+                        studentWelcomeVotingMsg.textContent = `Merci étudiant(e) ${state.currentUser.prenom} ${state.currentUser.nom} d'avoir voté !`;
+                        if(state.electionStatus == 'active'){ 
+                            secondParagraph.textContent = 'Les résultats seront annoncés à la fin de la période de vote.';
+                        }
+                        else if(state.electionStatus == 'closed'){ 
+                            secondParagraph.textContent = 'Vous pouvez à présent consulter les resultat des votes';
+                        }
+                    }
+                    renderStudentVoteView();
+                    renderResults();
+                    break;
+                    
+                case 'studentPendingView':
+                    // Pas besoin de rafraîchir cette vue
+                    break;
+                    
+                case 'authView':
+                    // Pas besoin de rafraîchir cette vue
+                    break;
+            }
+            
+            // Afficher une notification discrète des mises à jour
+            showUpdateNotification();
+        }
+        
+        // Fonction pour afficher une notification de mise à jour
+        function showUpdateNotification() {
+            // Créer une notification toast discrète
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--success-color);
+                color: white;
+                padding: 10px 15px;
+                border-radius: 5px;
+                box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+                z-index: 10000;
+                font-size: 14px;
+                animation: slideIn 0.3s ease-out;
+            `;
+            toast.innerHTML = '✅ Données mises à jour';
+            document.body.appendChild(toast);
+            
+            // Supprimer après 3 secondes
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // Ajouter les animations CSS pour les notifications
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            
+            .update-notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--success-color);
+                color: white;
+                padding: 10px 15px;
+                border-radius: 5px;
+                box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+                z-index: 10000;
+                font-size: 14px;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // =================================================================
+        // GESTION DE LA COULEUR DU BUREAU
+        // =================================================================
+        
+        // Écouteur pour le changement de couleur
+        document.getElementById('candidateCouleur').addEventListener('input', function(e) {
+            document.getElementById('candidateCouleurText').textContent = e.target.value;
+        });
+        
+        // Fonction pour générer le badge avec la couleur personnalisée
+        function getBureauBadge(bureauName, bureauColor, bureauProg_link) {
+            // Vérifier si la couleur est valide, sinon utiliser une couleur par défaut ${bureauName || 'Bureau'}
+            const validColor = bureauColor && bureauColor.startsWith('#') ? bureauColor : '#3498db';
+            
+            return `
+                <a href="${bureauProg_link}">
+                    <div class="bureau-badge" style="background: ${validColor};">
+                        <i class="fas fa-users"></i> Voir le programme
+                    </div>
+                </a>
+            `;
+        }
+        
+        // Fonction pour calculer la luminosité d'une couleur (pour déterminer la couleur du texte)
+        function getColorBrightness(hexColor) {
+            const r = parseInt(hexColor.substr(1, 2), 16);
+            const g = parseInt(hexColor.substr(3, 2), 16);
+            const b = parseInt(hexColor.substr(5, 2), 16);
+            return (r * 299 + g * 587 + b * 114) / 1000;
+        }
+
+        // =================================================================
+        // FONCTIONS DE CONFIRMATION
+        // =================================================================
+        function showConfirmation(type, message = '') {
+            if (type === 'success') {
+                document.getElementById('successConfirmation').style.display = 'flex';
+            } else if (type === 'error') {
+                if (message) {
+                    document.getElementById('errorMessage').textContent = message;
+                }
+                document.getElementById('errorConfirmation').style.display = 'flex';
+            }
+        }
+
+        function hideConfirmation(type) {
+            if (type === 'success') {
+                document.getElementById('successConfirmation').style.display = 'none';
+            } else if (type === 'error') {
+                document.getElementById('errorConfirmation').style.display = 'none';
+            }
+        }
+
+        // =================================================================
+        // FONCTIONS UTILITAIRES
+        // =================================================================
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        const csrftoken = getCookie('csrftoken');
+
+        async function apiFetch(url, options = {}) {
+            options.headers = {
+                ...options.headers,
+                'X-CSRFToken': csrftoken,
+            };
+            
+            if (!(options.body instanceof FormData)) {
+                 options.headers['Content-Type'] = 'application/json';
+            }
+
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Erreur de communication avec le serveur.' }));
+                throw new Error(errorData.error || `Erreur ${response.status}`);
+            }
+            return response.json();
+        }
+
+        function showView(viewId) {
+            views.forEach(view => view.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        function displayMessage(element, message, type = 'error') {
+            element.textContent = message;
+            element.className = `message message-${type}`;
+            element.style.display = 'block';
+        }
+
+        function hideMessage(element) {
+            element.style.display = 'none';
+        }
+
+        function previewImage(input, previewElement) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewElement.src = e.target.result;
+                    previewElement.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // =================================================================
+        // GESTION DE L'AUTHENTIFICATION
+        // =================================================================
+
+        showRegister.addEventListener('click', () => {
+            loginFormContainer.style.display = 'none';
+            registerFormContainer.style.display = 'block';
+            hideMessage(loginError);
+        });
+
+        showLogin.addEventListener('click', () => {
+            registerFormContainer.style.display = 'none';
+            loginFormContainer.style.display = 'block';
+            hideMessage(registerError);
+            hideMessage(registerSuccess);
+        });
+
+        registerPhoto.addEventListener('change', () => previewImage(registerPhoto, photoPreview));
+        registerRecu.addEventListener('change', () => previewImage(registerRecu, recuPreview));
+        candidatePhoto.addEventListener('change', () => previewImage(candidatePhoto, candidatePhotoPreview));
+
+        // Dans votre JavaScript, ajoutez ces fonctions pour gérer les dépendances
+        async function updateSpecialitesByCycle(cycle) {
+            const specialiteSelect = document.getElementById('registerSpecialite');
+            const niveauSelect = document.getElementById('registerNiveau');
+            const campusSelect = document.getElementById('registerCampus');
+            
+            // Vider les options actuelles
+            specialiteSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre spécialité</option>';
+            niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
+            campusSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre campus</option>';
+            specialiteSelect.disabled = true;
+            niveauSelect.disabled = true;
+            campusSelect.disabled = true;
+
+            if (!cycle) {
+                specialiteSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord le cycle</option>';
+                niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord le cycle</option>';
+                campusSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord le cycle</option>';
+                return;
+            }
+            
+            try {
+                // Appel API pour récupérer les options
+                const response = await fetch(`/api/cycle-options/?cycle=${cycle}`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Erreur de chargement');
+                }
+                
+                // Mettre à jour les spécialités
+                specialiteSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre spécialité</option>';
+                data.specialites.forEach(specialite => {
+                    const option = document.createElement('option');
+                    option.value = specialite[0];  // La valeur (ex: 'informatique_bts')
+                    option.textContent = specialite[1];  // Le libellé (ex: 'Informatique BTS')
+                    specialiteSelect.appendChild(option);
+                });
+                specialiteSelect.disabled = false;
+                
+                // Mettre à jour les niveaux si pas ingenieur
+                if (cycle != 'ingenieur'){
+                    if(cycle == 'licence'){
+                        niveauSelect.innerHTML = '<option value="">3</option>';
+                    }else{
+                        niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
+                        data.niveaux.forEach(niveau => {
+                            const option = document.createElement('option');
+                            option.value = niveau; 
+                            option.textContent = niveau;
+                            niveauSelect.appendChild(option);
+                        });
+                    }
+                    niveauSelect.disabled = false;
+                    campusSelect.innerHTML = `
+                        <option value="" disabled selected>Sélectionnez votre campus</option>
+                        <option value="Bonamoussadi">Bonamoussadi</option>
+                        <option value="Bonaberi">Bonaberi</option>
+                    `;
+                    campusSelect.disabled = false;
+
+                }
+                else{
+                    campusSelect.innerHTML = `
+                        <option value="Bonamoussadi">Bonamoussadi</option>
+                    `;
+                    campusSelect.disabled = false;
+                }
+                    
+            } catch (error) {
+                console.error('Erreur:', error);
+                specialiteSelect.innerHTML = '<option value="" disabled selected>Erreur de chargement</option>';
+                niveauSelect.innerHTML = '<option value="" disabled selected>Erreur de chargement</option>';
+            }
+        }
+        function updateNiveauBySpecialityIng(speciality) {
+            const niveauSelect = document.getElementById('registerNiveau');
+            let niveauxList  = [];
+            // Vider les options actuelles
+            niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
+            niveauSelect.disabled = true;
+            if (!speciality) {
+                niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord la specialité</option>';
+                return;
+            }
+            if (speciality == 'Prépa') { niveauxList  = [1, 2] }
+            else { niveauxList  = [3, 4, 5] }
+            // Mettre à jour les spécialités
+            niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
+            niveauxList.forEach(niveau => {
+                const option = document.createElement('option');
+                option.value = niveau;  // La valeur (ex: 'informatique_bts')
+                option.textContent = niveau;  // Le libellé (ex: 'Informatique BTS')
+                niveauSelect.appendChild(option);
+            });
+            niveauSelect.disabled = false;
+        }
+
+        // Écouteur pour le changement de cycle
+        document.getElementById('registerCycle').addEventListener('change', function(e) {
+            updateSpecialitesByCycle(e.target.value);
+        });
+        // Écouteur pour le changement de specialité ingenieur
+        document.getElementById('registerSpecialite').addEventListener('change', function(e) {
+            if (document.getElementById('registerCycle').value == "ingenieur"){
+                updateNiveauBySpecialityIng(e.target.value);
+            }
+        });
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessage(registerError);
+            hideMessage(registerSuccess);
+        
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            if (password !== confirmPassword) {
+                displayMessage(registerError, 'Les mots de passe ne correspondent pas.');
+                return;
+            }
+        
+            // Désactiver le bouton d'inscription
+            const submitBtn = registerForm.querySelector('button[type="submit"]');
+            disableButtons([submitBtn]);
+            showLoader('registerLoader');
+        
+            const formData = new FormData();
+            formData.append('nom', document.getElementById('registerNom').value);
+            formData.append('prenom', document.getElementById('registerPrenom').value);
+            formData.append('matricule', document.getElementById('registerMatricule').value);
+            formData.append('campus', document.getElementById('registerCampus').value);
+            formData.append('cycle', document.getElementById('registerCycle').value);
+            formData.append('specialite', document.getElementById('registerSpecialite').value);
+            formData.append('niveau', document.getElementById('registerNiveau').value);
+            formData.append('password', password);
+            formData.append('photo', registerPhoto.files[0]);
+            formData.append('recu', registerRecu.files[0]);
+        
+            try {
+                const data = await apiFetch('/api/register/', { 
+                    method: 'POST', 
+                    body: formData 
+                });
+                
+                showConfirmation('success');
+                registerForm.reset();
+                photoPreview.style.display = 'none';
+                recuPreview.style.display = 'none';
+                hideMessage(registerError);
+                hideMessage(registerSuccess);
+        
+            } catch (error) {
+                showConfirmation('error', error.message);
+            } finally {
+                // Réactiver le bouton et cacher le loader
+                enableButtons([submitBtn]);
+                hideLoader('registerLoader');
+            }
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessage(loginError);
+            
+            const matricule = document.getElementById('loginMatricule').value;
+            const password = document.getElementById('loginPassword').value;
+        
+            // Désactiver le bouton de connexion
+            const submitBtn = loginForm.querySelector('button[type="submit"]');
+            disableButtons([submitBtn]);
+            showLoader('loginLoader');
+        
+            try {
+                const user = await apiFetch('/api/login/', {
+                    method: 'POST',
+                    body: JSON.stringify({ matricule, password })
+                });
+                state.currentUser = user;
+                loginForm.reset();
+                studentWelcomeMsg.textContent = `Bienvenue, ${state.currentUser.prenom} ${state.currentUser.nom}`;
+                
+                checkSession();
+            } catch (error) {
+                displayMessage(loginError, error.message);
+            } finally {
+                // Réactiver le bouton et cacher le loader
+                enableButtons([submitBtn]);
+                hideLoader('loginLoader');
+            }
+        });
+
+        logoutButtons.forEach(btn => {
+            btn.addEventListener('click', async () => {
+                // Arrêter le rafraîchissement automatique
+                stopAutoRefresh();
+                
+                await apiFetch('/api/logout/');
+                state.currentUser = null;
+                showView('authView');
+            });
+        });
+        
+        async function checkSession() {
+            try {
+                // Cacher immédiatement la vue auth pendant la vérification
+                showView('pageLoadLoader');
+                hideView('authView');
+
+                const data = await apiFetch('/api/dashboard_data/');
+                console.log(data);
+
+                state.currentUser = data.user;
+                state.candidates = data.candidates;
+                state.electionStatus = data.election_status;
+                state.pendingUsers = data.pending_users;
+                state.allUsers = data.all_users;
+                navigateToDashboard();
+                console.log("state.pendingUsers :", state.pendingUsers);
+            } catch (error) {
+                console.log('Session non valide, affichage login:', error);
+                showView('authView');
+            } finally {
+                console.log('Cacher pageLoadLoader');
+                // Cacher le loader de chargement page une fois tout chargé
+                hideLoader('pageLoadLoader');
+            }
+        }
+        function hideView(viewId) {
+            document.getElementById(viewId).classList.remove('active');
+        }
+
+        function navigateToDashboard() {
+            if (!state.currentUser) return;
+            console.log("stopAutoRefresh a navigateToDashboard")
+            
+            // Arrêter le rafraîchissement précédent
+            stopAutoRefresh();
+            console.log(state.currentUser)
+            console.log("________________________________")
+        
+            if (state.currentUser.is_admin) {
+                console.log("state.currentUser.is_admin")
+                showView('adminDashboardView');
+                renderAdminDashboard();
+                // Démarrer le rafraîchissement automatique pour l'admin
+                startAutoRefresh();
+            } else {
+                if (state.currentUser.status === 'pending') {
+                    showView('studentPendingView');
+                    console.log("state.currentUser.status === 'pending'")
+                    // Pas de rafraîchissement automatique pour les utilisateurs en attente
+                } else if (state.currentUser.status === 'validated') {
+                    console.log("state.currentUser.status === 'validated'")
+                    if (state.currentUser.has_voted) {
+                        studentWelcomeVotingMsg.textContent = `Merci étudiant(e) ${state.currentUser.prenom} ${state.currentUser.nom} d'avoir voté !`;
+                        showView('studentVotedView');
+                        if (state.electionStatus == 'closed'){
+                            secondParagraph.textContent = 'Vous pouvez à présent consulter les resultat des votes';
+                        }
+                        renderResults();
+                        console.log("state.currentUser.has_voted")
+                        // Rafraîchissement limité pour les utilisateurs ayant voté
+                        startAutoRefresh();
+                        console.log("state.currentUser.has_voted")
+                    } else {
+                        showView('studentVoteView');
+                        renderStudentVoteView();
+                        // Rafraîchissement actif pour les utilisateurs pouvant voter
+                        startAutoRefresh();
+                        console.log("state.currentUser.has_voted == False")
+                    }
+                    
+                }
+            }
+        }
+        // =================================================================
+        // INTERFACE ÉTUDIANT AMÉLIORÉE
+        // =================================================================
+
+        function renderStudentVoteView() {
+            studentWelcomeMsg.textContent = `Bienvenue, ${state.currentUser.prenom} ${state.currentUser.nom}`;
+            candidatesForVote.innerHTML = '';
+            electionStatusMessage.innerHTML = '';
+
+            selectedCandidateId = null;
+            selectedCandidateInfo.style.display = 'none';
+            console.log('state.electionStatus ::::', state.electionStatus)
+            if (state.electionStatus == 'pending') {
+                electionStatusMessage.innerHTML = '<div class="message message-warning">L\'élection n\'est pas encore ouverte.</div>';
+                return;
+            }
+            if (state.electionStatus == 'closed') {
+                electionStatusMessage.innerHTML = '<div class="message message-warning">L\'élection est terminée. Voici les résultats compilés: </div>';
+                console.log('state.candidates.length ::::', state.candidates.length)
+                if (state.candidates.length === 0) {
+                    electionStatusMessage.innerHTML = '<div class="message message-info">Aucun candidat enregistré.</div>';
+                    return;
+                }
+    
+                const totalVotes = state.candidates.reduce((sum, candidate) => sum + candidate.votes, 0);
+                console.log('totalVotes ::::', totalVotes)
+                
+                state.candidates.forEach(candidate => {
+                    const percentage = totalVotes > 0 ? (candidate.votes / totalVotes) * 100 : 0;
+                    const candidateDiv = document.createElement('div');
+                    candidateDiv.className = 'list-item';
+                    candidateDiv.innerHTML = `
+                        <div style="flex-grow: 1;">
+                            <div style="display: flex; align-items: center; gap: 15px; flex-grow: 1;">
+                                <a href="${candidate.photo_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
+                                    <img src="${candidate.photo_url || 'https://api.dicebear.com/8.x/initials/svg?seed=' + encodeURIComponent(candidate.prenom + ' ' + candidate.nom)}" 
+                                    crossorigin="anonymous"
+                                    alt="Photo de ${candidate.prenom} ${candidate.nom}"
+                                     style="width: 80px; height: 80px; border-radius: 30%; object-fit: cover; border: 2px solid var(--primary-color);">
+                                </a>
+                                <div>
+                                    <strong>${candidate.prenom} ${candidate.nom}</strong><br>
+                                    <small>${candidate.cycle_display} - ${candidate.specialite} ${candidate.niveau} - ${candidate.campus}</small><br>
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                                        <div style="width: 16px; height: 16px; border-radius: 50%; background: ${candidate.bureau_color}; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>
+                                        <small>"${candidate.slogan}"</small><br>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="result-bar-container">
+                                <div class="result-bar" style="width: ${percentage}%">
+                                    ${candidate.votes} vote(s) (${percentage.toFixed(1)}%)
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    electionStatusMessage.appendChild(candidateDiv);
+                });
+            
+                return;
+            }
+            
+            if (state.candidates.length === 0) {
+                electionStatusMessage.innerHTML = '<div class="message message-info">Aucun candidat n\'est enregistré pour le moment.</div>';
+                return;
+            }
+            
+            state.candidates.forEach(candidate => {
+                const candidateDiv = document.createElement('div');
+                candidateDiv.className = 'candidate-card';
+
+                // Récupérer le nom et la couleur du bureau depuis les données du candidat
+                const bureauName = candidate.bureau_name || 'Bureau';
+                const bureauColor = candidate.bureau_color || '#3498db';
+                const bureauProg = candidate.programme_url;
+                const bureauBadge = getBureauBadge(bureauName, bureauColor, bureauProg);
+
+                candidateDiv.style.background = candidate.bureau_color;
+                candidateDiv.innerHTML = `
+                    ${bureauBadge}
+                    <div class="selection-badge">
+                        <i class="fas fa-check"></i> Sélectionné
+                    </div>
+                    <a href="${candidate.photo_url}"><img src="${candidate.photo_url || 'https://api.dicebear.com/8.x/initials/svg?seed=' + encodeURIComponent(candidate.nom)}" 
+                        crossorigin="anonymous"
+                        alt="Photo de ${candidate.prenom} ${candidate.nom}">
+                    </a>
+                    <h4 style="color: #FFFFFF; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);padding: 4px;
+                    background-color: rgba(0, 0, 0, 0.5);border-radius: 15px">${candidate.prenom} ${candidate.nom}</h4>
+                    
+                    <div class="candidate-info" style="color: #000000">
+                        <p>
+                            <i class="fas fa-graduation-cap"></i> 
+                            <strong>Cycle:</strong> 
+                            <span>${candidate.cycle_display}</span>
+                        </p>
+                        <p>
+                            <i class="fas fa-book"></i> 
+                            <strong>Spécialité:</strong> 
+                            <span>${candidate.specialite_display}</span>
+                        </p>
+                        <p>
+                            <i class="fas fa-layer-group"></i> 
+                            <strong>Niveau:</strong> 
+                            <span>${candidate.niveau}</span>
+                        </p>
+                        <p>
+                            <i class="fas fa-building"></i> 
+                            <strong>Bureau:</strong> 
+                            <span>${bureauName}</span>
+                        </p>
+                    </div>
+                    
+                    <div class="slogan">
+                        <i class="fas fa-quote-left"></i> 
+                        ${candidate.slogan || "Ensemble pour l'avenir de l'AESP !"}
+                        <i class="fas fa-quote-right"></i>
+                    </div>
+                    
+                    <button class="vote-btn" data-candidate-id="${candidate.id}">
+                        <i class="fas fa-vote-yea"></i> Choisir ce candidat
+                    </button>
+                `;
+                candidatesForVote.appendChild(candidateDiv);
+            });
+        }
+        // Gestion de la sélection des candidats
+        candidatesForVote.addEventListener('click', (e) => {
+            if (e.target.classList.contains('vote-btn') || e.target.closest('.vote-btn')) {
+                const voteBtn = e.target.classList.contains('vote-btn') ? e.target : e.target.closest('.vote-btn');
+                const candidateId = parseInt(voteBtn.dataset.candidateId);
+                
+                // Désélectionner toutes les cartes
+                document.querySelectorAll('.candidate-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                
+                // Sélectionner la carte cliquée
+                const selectedCard = voteBtn.closest('.candidate-card');
+                selectedCard.classList.add('selected');
+                
+                // Mettre à jour la sélection
+                selectedCandidateId = candidateId;
+                const candidate = state.candidates.find(c => c.id === candidateId);
+                selectedCandidateName.textContent = `${candidate.prenom} ${candidate.nom}`;
+                selectedCandidateInfo.style.display = 'block';
+                
+                // Scroll vers le haut pour voir la confirmation
+                selectedCandidateInfo.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+
+        // Confirmation du vote
+        confirmVoteBtn.addEventListener('click', async () => {
+            if (!selectedCandidateId) {
+                alert('Veuillez sélectionner un candidat avant de voter.');
+                return;
+            }
+        
+            if (confirm(`Êtes-vous sûr de vouloir voter pour ${selectedCandidateName.textContent} ?\n\nCette action est irréversible et vous ne pourrez plus modifier votre choix.`)) {
+                await castVote(selectedCandidateId);
+            }
+        });
+
+        async function castVote(candidateId) {
+            // Désactiver tous les boutons de vote
+            const voteButtons = document.querySelectorAll('.vote-btn');
+            const confirmBtn = document.getElementById('confirmVoteBtn');
+            disableButtons([...voteButtons, confirmBtn]);
+            showLoader('voteLoader');
+        
+            try {
+                await apiFetch('/api/vote/', {
+                    method: 'POST',
+                    body: JSON.stringify({ candidate_id: candidateId })
+                });
+                await checkSession();
+            } catch (error) {
+                alert(`Erreur lors du vote : ${error.message}`);
+            } finally {
+                // Réactiver les boutons et cacher le loader
+                enableButtons([...voteButtons, confirmBtn]);
+                hideLoader('voteLoader');
+            }
+        }
+
+        // =================================================================
+        // INTERFACE ADMINISTRATEUR AMÉLIORÉE
+        // =================================================================
+
+        function renderAdminDashboard() {
+            switchAdminTab('validationContent');
+            renderPendingUsers();
+            renderCandidatesList();
+            renderElectionStatus();
+            renderResults();
+            renderUsersList();
+        }
+        
+        adminNavButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchAdminTab(btn.dataset.target);
+            });
+        });
+
+        function switchAdminTab(targetId) {
+            // Désactiver tous les contenus
+            adminContents.forEach(content => content.classList.remove('active'));
+            // Désactiver tous les boutons
+            adminNavButtons.forEach(btn => btn.classList.remove('active'));            
+            // Activer le contenu cible
+            document.getElementById(targetId).classList.add('active');            
+            // Activer le bouton correspondant
+            const activeButton = Array.from(adminNavButtons).find(btn => 
+                btn.dataset.target === targetId            );
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+        }
+
+        function renderPendingUsers() {
+            pendingUsersList.innerHTML = '';
+            if (state.pendingUsers.length === 0) {
+                pendingUsersList.innerHTML = '<p>Aucun utilisateur en attente de validation.</p>';
+                return;
+            }
+
+            state.pendingUsers.forEach(user => {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'list-item';
+                userDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 15px; flex-grow: 1;">
+                    <a href="${user.photo_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
+                        <img src="${user.photo_url || 'https://api.dicebear.com/8.x/initials/svg?seed=' + encodeURIComponent(user.prenom + ' ' + user.nom)}" 
+                        crossorigin="anonymous"
+                        alt="Photo de ${user.prenom} ${user.nom}"
+                         style="width: 80px; height: 80px; border-radius: 30%; object-fit: cover; border: 2px solid var(--primary-color);">
+                    </a>
+                    <div>
+                        <strong>${user.prenom} ${user.nom}</strong> (${user.matricule})<br>
+                        <strong>${user.cycle}-${user.specialite} ${user.niveau} - ${user.campus}</strong><br>
+                        <a href="${user.recu_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
+                            <i class="fas fa-file-invoice"></i> Voir le reçu
+                        </a>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" data-user-id="${user.id}">
+                        <i class="fas fa-check"></i> Valider
+                    </button>
+                    <button class="btn btn-danger" data-user-id="${user.id}">
+                        <i class="fas fa-times"></i> Supprimer
+                    </button>
+                </div>
+            `;
+                pendingUsersList.appendChild(userDiv);
+            });
+        }
+
+        pendingUsersList.addEventListener('click', async (e) => {
+            console.log("appuyé !!!!")
+            if (e.target.tagName !== 'BUTTON') return;
+            const userId = e.target.dataset.userId;
+            if (!userId) return;
+
+            try {
+                if (e.target.classList.contains('btn-success')) {
+                    await apiFetch(`/api/users/${userId}/`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ status: 'validated' })
+                    });
+                } else if (e.target.classList.contains('btn-danger')) {
+                    if (confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) {
+                        await apiFetch(`/api/users/${userId}/`, { method: 'DELETE' });
+                    }
+                }
+                await checkSession();
+            } catch (error) {
+                alert(`Erreur : ${error.message}`);
+            }
+        });
+        usersList.addEventListener('click', async (e) => {
+            if (e.target.tagName !== 'BUTTON') return;
+            const userId = e.target.dataset.userId;
+            if (!userId) return;
+
+            try {
+                if (e.target.classList.contains('btn-danger')) {
+                    if (confirm("Êtes-vous sûr de vouloir desactiver cet étudiant ?")) {
+                        await apiFetch(`/api/users/${userId}/`, {
+                            method: 'PUT',
+                            body: JSON.stringify({ status: 'pending' })
+                        });
+                    }
+                } else if (e.target.classList.contains('btn-danger')) {
+                    if (confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) {
+                        await apiFetch(`/api/users/${userId}/`, { method: 'DELETE' });
+                    }
+                }
+                await checkSession();
+            } catch (error) {
+                alert(`Erreur : ${error.message}`);
+            }
+        });
+        
+        // Formulaire d'ajout de candidat amélioré
+        // fonctions pour gérer les dépendances entre cycle et specialité niveau
+        async function updateSpecialitesCandidatesByCycle(cycle) {
+            const specialiteSelect = document.getElementById('candidateSpecialite');
+            const niveauSelect = document.getElementById('candidateNiveau');
+            const campusSelect = document.getElementById('candidateCampus');
+            
+            // Vider les options actuelles
+            specialiteSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre spécialité</option>';
+            niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
+            campusSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre campus</option>';
+            specialiteSelect.disabled = true;
+            niveauSelect.disabled = true;
+            campusSelect.disabled = true;
+
+            if (!cycle) {
+                specialiteSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord le cycle</option>';
+                niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord le cycle</option>';
+                campusSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord le cycle</option>';
+                return;
+            }
+            
+            try {
+                // Appel API pour récupérer les options
+                const response = await fetch(`/api/cycle-options/?cycle=${cycle}`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Erreur de chargement');
+                }
+                
+                // Mettre à jour les spécialités
+                specialiteSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre spécialité</option>';
+                data.specialites.forEach(specialite => {
+                    const option = document.createElement('option');
+                    option.value = specialite[0];  // La valeur (ex: 'informatique_bts')
+                    option.textContent = specialite[1];  // Le libellé (ex: 'Informatique BTS')
+                    specialiteSelect.appendChild(option);
+                });
+                specialiteSelect.disabled = false;
+                
+                // Mettre à jour les niveaux si pas ingenieur
+                if (cycle != 'ingenieur'){
+                    if(cycle == 'licence'){
+                        niveauSelect.innerHTML = '<option value="3">3</option>';
+                    }else{
+                        niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
+                        data.niveaux.forEach(niveau => {
+                            const option = document.createElement('option');
+                            option.value = niveau; 
+                            option.textContent = niveau;
+                            niveauSelect.appendChild(option);
+                        });
+                    }
+                    niveauSelect.disabled = false;
+                    campusSelect.innerHTML = `
+                        <option value="" disabled selected>Sélectionnez votre campus</option>
+                        <option value="Bonamoussadi">Bonamoussadi</option>
+                        <option value="Bonaberi">Bonaberi</option>
+                    `;
+                    campusSelect.disabled = false;
+
+                }
+                else{
+                    campusSelect.innerHTML = `
+                        <option value="Bonamoussadi">Bonamoussadi</option>
+                    `;
+                    campusSelect.disabled = false;
+                }
+                    
+            } catch (error) {
+                console.error('Erreur:', error);
+                specialiteSelect.innerHTML = '<option value="" disabled selected>Erreur de chargement</option>';
+                niveauSelect.innerHTML = '<option value="" disabled selected>Erreur de chargement</option>';
+            }
+        }
+        function updateNiveauCandidatesBySpecialityIng(speciality) {
+            const niveauSelect = document.getElementById('candidateNiveau');
+            let niveauxList  = [];
+            // Vider les options actuelles
+            niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
+            niveauSelect.disabled = true;
+
+            if (!speciality) {
+                niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord la specialité</option>';
+                return;
+            }
+            if (speciality == 'Prépa') { niveauxList  = [1, 2] }
+            else { niveauxList  = [3, 4, 5] }
+            // Mettre à jour les spécialités
+            niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
+            niveauxList.forEach(niveau => {
+                const option = document.createElement('option');
+                option.value = niveau;  // La valeur (ex: 'informatique_bts')
+                option.textContent = niveau;  // Le libellé (ex: 'Informatique BTS')
+                niveauSelect.appendChild(option);
+            });
+            niveauSelect.disabled = false;
+        }
+
+        // Écouteur pour le changement de cycle
+        document.getElementById('candidateCycle').addEventListener('change', function(e) {
+            updateSpecialitesCandidatesByCycle(e.target.value);
+        });
+        // Écouteur pour le changement de SPECIALITE
+        document.getElementById('candidateSpecialite').addEventListener('change', function(e) {
+            if (document.getElementById('candidateCycle').value == "ingenieur"){
+                updateNiveauCandidatesBySpecialityIng(e.target.value);
+            }
+        });
+        addCandidateForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (state.electionStatus === 'active') {
+                alert("Vous ne pouvez pas ajouter un candidat pendant une élection active.");
+                return;
+            }
+            // Désactiver le bouton d'ajout de candidat
+            const submitBtn = registerForm.querySelector('button[type="submit"]');
+            disableButtons([submitBtn]);
+            showLoader('registerCandidat');
+            
+            const nom = document.getElementById('candidateNom').value.trim();
+            const prenom = document.getElementById('candidatePrenom').value.trim();
+            const cycle = document.getElementById('candidateCycle').value;
+            const specialite = document.getElementById('candidateSpecialite').value.trim();
+            const niveau = document.getElementById('candidateNiveau').value;
+            const campus = document.getElementById('candidateCampus').value.trim();
+            const slogan = document.getElementById('candidateSlogan').value.trim();
+            const NomBureau = document.getElementById('candidateBureau').value.trim();
+            const couleur = document.getElementById('candidateCouleur').value;
+
+            console.log("bureau : ", NomBureau)
+            console.log("bureau : ", NomBureau)
+            console.log("bureau : ", NomBureau)
+
+            if (!nom || !prenom || !cycle || !specialite || !niveau || !campus || !slogan || !NomBureau || !couleur) {
+                alert('Veuillez remplir tous les champs obligatoires.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('nom', nom);
+            formData.append('prenom', prenom);
+            formData.append('cycle', cycle);
+            formData.append('specialite', specialite);
+            formData.append('niveau', niveau);
+            formData.append('campus', campus);
+            formData.append('bureau_name', NomBureau);
+            formData.append('slogan', slogan);
+            formData.append('bureau_color', couleur);
+            formData.append('photo', candidatePhoto.files[0]);
+            formData.append('programmePDF', candidateProgramme_pdf.files[0]);
+
+            try {
+                await apiFetch('/api/candidates/', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                addCandidateForm.reset();
+                candidatePhotoPreview.style.display = 'none';
+                // Réinitialiser la couleur
+                document.getElementById('candidateCouleur').value = '#3498db';
+                document.getElementById('candidateCouleurText').textContent = '#3498db';
+                await checkSession();
+            } catch (error) {
+                alert(`Erreur : ${error.message}`);
+            }finally {
+                // Réactiver le bouton et cacher le loader
+                enableButtons([submitBtn]);
+                hideLoader('registerCandidat');
+            }
+        });
+
+        function renderCandidatesList() {
+            candidatesList.innerHTML = '';
+            if (state.candidates.length === 0) {
+                candidatesList.innerHTML = '<p>Aucun candidat enregistré.</p>';
+                return;
+            }
+            state.candidates.forEach(candidate => {
+                const candidateDiv = document.createElement('div');
+                candidateDiv.className = 'list-item';
+                
+                const bureauColor = candidate.bureau_color || '#3498db';
+                const bureauName = candidate.bureau_name || 'Bureau';
+                
+                candidateDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 15px; flex-grow: 1;">
+                        <a href="${candidate.photo_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
+                            <img src="${candidate.photo_url || 'https://api.dicebear.com/8.x/initials/svg?seed=' + encodeURIComponent(candidate.prenom + ' ' + candidate.nom)}" 
+                            crossorigin="anonymous"
+                            alt="Photo de ${candidate.prenom} ${candidate.nom}"
+                             style="width: 80px; height: 80px; border-radius: 30%; object-fit: cover; border: 2px solid var(--primary-color);">
+                        </a>
+                        <div style="flex-grow: 1;">
+                            <strong>${candidate.prenom} ${candidate.nom}</strong><br>
+                            <small>${candidate.cycle_display} - ${candidate.specialite} ${candidate.niveau} - ${candidate.campus}</small><br>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                                <div style="width: 16px; height: 16px; border-radius: 50%; background: ${bureauColor}; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>
+                                <span style="font-size: 0.85rem; color: #666;">${bureauName}</span>
+                            </div>
+                            <small>"${candidate.slogan}"</small><br>
+                            <span style="color: var(--success-color); font-weight: bold;">
+                                ${candidate.votes} vote(s) <span style="color: #000000;"> | </span>  
+                                <a href="${candidate.programme_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
+                                    <i class="fas fa-file-invoice"></i> Voir le programme de campagne
+                                </a>
+                            </span>
+                        </div>
+                    </div>
+                    <button class="btn btn-danger" data-candidate-id="${candidate.id}">Supprimer</button>
+                `;
+                candidatesList.appendChild(candidateDiv);
+            });
+        }
+        candidatesList.addEventListener('click', async (e) => {
+             if (e.target.tagName !== 'BUTTON' || !e.target.dataset.candidateId) return;
+             if (state.electionStatus === 'active') {
+                 alert("Vous ne pouvez pas supprimer un candidat pendant une élection active.");
+                 return;
+             }
+             if (confirm("Êtes-vous sûr de vouloir supprimer ce candidat ?")) {
+                try {
+                    showLoader('deleteCandidat');
+                    await apiFetch(`/api/candidates/${e.target.dataset.candidateId}/`, { method: 'DELETE' });
+                    await checkSession();
+                } catch (error) {
+                    alert(`Erreur : ${error.message}`);
+                }finally {
+                    hideLoader('deleteCandidat');
+                }
+             }
+        });
+
+        // 
+        function renderElectionStatus() {
+            const statusText = { 
+                pending: "🟡 En attente", 
+                active: "🟢 Active", 
+                closed: "🔴 Terminée" 
+            };
+            electionStatusAdmin.textContent = statusText[state.electionStatus];
+            
+            // Afficher/masquer les boutons selon le statut
+            startElectionBtn.style.display = state.electionStatus === 'pending' ? 'flex' : 'none';
+            stopElectionBtn.style.display = state.electionStatus === 'active' ? 'flex' : 'none';
+            resetElectionBtn.style.display = state.electionStatus === 'closed' ? 'flex' : 'none';
+            
+            // Afficher les statistiques si l'élection est terminée
+            const electionStats = document.getElementById('electionStats');
+            if (state.electionStatus === 'closed') {
+                electionStats.style.display = 'block';
+                renderElectionStats();
+            } else {
+                electionStats.style.display = 'none';
+            }
+        }
+
+        // Fonction pour afficher les statistiques
+        function renderElectionStats() {
+            const statsContent = document.getElementById('statsContent');
+            const totalVotes = state.candidates.reduce((sum, candidate) => sum + candidate.votes, 0);
+            const totalVoters = state.allUsers.filter(user => user.has_voted).length;
+            const totalUsers = state.allUsers.filter(user => user.status === 'validated').length;
+            const participationRate = totalUsers > 0 ? ((totalVoters / totalUsers) * 100).toFixed(1) : 0;
+            
+            statsContent.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">${totalVotes}</div>
+                        <div class="stat-label">Votes totaux</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${totalUsers}</div>
+                        <div class="stat-label">Électeurs inscrits</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${participationRate}%</div>
+                        <div class="stat-label">Taux de participation</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${state.candidates.length}</div>
+                        <div class="stat-label">Candidats</div>
+                    </div>
+                </div>
+                
+                <div class="warning-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Attention :</strong> La réinitialisation effacera tous les votes et remettra l'élection à zéro.
+                </div>
+            `;
+        }
+
+        // Gestionnaire pour le bouton de réinitialisation
+        resetElectionBtn.addEventListener('click', async () => {
+            if (!confirm(`🚨 ACTION IRRÉVERSIBLE 🚨\n\nÊtes-vous ABSOLUMENT sûr de vouloir réinitialiser l'élection ?\n\nCette action va :\n• Remettre tous les compteurs de votes à zéro\n• Réinitialiser le statut "a voté" pour tous les utilisateurs\n• Remettre l'élection en statut "En attente"\n\nCette action ne peut pas être annulée !`)) {
+                return;
+            }
+            
+            // Demander une confirmation supplémentaire
+            const confirmation = prompt(`Pour confirmer la réinitialisation, tapez "RESET" ci-dessous :`);
+            if (confirmation !== 'RESET') {
+                alert('Réinitialisation annulée. Le texte de confirmation ne correspond pas.');
+                return;
+            }
+            
+            try {
+                await apiFetch('/api/election/reset/', {
+                    method: 'POST',
+                    body: JSON.stringify({ confirm: true })
+                });
+                await checkSession();
+                alert('✅ Élection réinitialisée avec succès !');
+            } catch (error) {
+                alert(`❌ Erreur lors de la réinitialisation : ${error.message}`);
+            }
+        });
+        
+        // Mettez à jour les autres gestionnaires pour qu'ils utilisent flex
+        startElectionBtn.addEventListener('click', () => {
+            if (state.candidates.length < 2) {
+                alert("Il doit y avoir au moins deux candidats pour démarrer l'élection.");
+                return;
+            }
+            
+            if (confirm("Êtes-vous sûr de vouloir démarrer l'élection ?\n\nLes étudiants pourront commencer à voter.")) {
+                updateElectionStatus('active');
+            }
+        });
+
+        stopElectionBtn.addEventListener('click', () => {
+            if (confirm("Êtes-vous sûr de vouloir terminer l'élection ?\n\nAucun vote ne pourra plus être effectué.")) {
+                updateElectionStatus('closed');
+            }
+        });
+        
+        async function updateElectionStatus(newStatus) {
+            if (!confirm(`Êtes-vous sûr de vouloir ${newStatus === 'active' ? 'démarrer' : 'terminer'} l'élection ?`)) return;
+            try {
+                await apiFetch('/api/election/', {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: newStatus })
+                });
+                await checkSession();
+            } catch (error) {
+                alert(`Erreur : ${error.message}`);
+            }
+        }
+
+        startElectionBtn.addEventListener('click', () => {
+            if (state.candidates.length < 2) {
+                alert("Il doit y avoir au moins deux candidats pour démarrer l'élection.");
+                return;
+            }
+            updateElectionStatus('active');
+        });
+        stopElectionBtn.addEventListener('click', () => updateElectionStatus('closed'));
+
+        function renderResults() {
+            console.log("viewId  ::::::  ")
+            const activeView = document.querySelector('.view.active');
+            //if (!activeView) return;
+            const viewId = activeView.id;
+            console.log("viewId  ::::::  ", viewId);
+
+            resultsContainer.innerHTML = 'msd mk;fkwe;k ndkn';
+            resultsContainerEtudiant.innerHTML = '';
+
+            console.log("state.electionStatus :",state.electionStatus, " viewId : ", viewId);
+            if (state.electionStatus === 'pending') {
+                console.log("state.electionStatus === 'pending'", viewId);
+                resultsContainer.innerHTML = '<div class="message message-info">L\'élection n\'a pas encore commencé.</div>';
+                resultsContainerEtudiant.innerHTML = resultsContainer.innerHTML;
+                return;
+            }
+
+            console.log("viewId !=  'adminDashboardView' : ", viewId !=  'adminDashboardView');
+            if (state.electionStatus === 'active' && viewId != 'adminDashboardView') {
+                resultsContainerEtudiant.innerHTML = '<div class="message message-info">L\'élection est encore en cours...</div>';
+                console.log("state.electionStatus === 'active' && viewId != 'adminDashboardView", viewId);
+                //return;
+            }
+            
+            console.log("state.candidates.length : ", state.candidates.length);
+            if (state.candidates.length === 0) {
+                resultsContainer.innerHTML = '<div class="message message-info">Aucun candidat enregistré.</div>';
+                resultsContainerEtudiant.innerHTML = resultsContainer.innerHTML;
+                return;
+            }
+            
+
+            const totalVotes = state.candidates.reduce((sum, candidate) => sum + candidate.votes, 0);
+            
+            state.candidates.forEach(candidate => {
+                const percentage = totalVotes > 0 ? (candidate.votes / totalVotes) * 100 : 0;
+                const candidateDiv = document.createElement('div');
+                candidateDiv.className = 'list-item';
+                candidateDiv.innerHTML = `
+                    <div style="flex-grow: 1;">
+                        <div style="display: flex; align-items: center; gap: 15px; flex-grow: 1;">
+                            <a href="${candidate.photo_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
+                                <img src="${candidate.photo_url || 'https://api.dicebear.com/8.x/initials/svg?seed=' + encodeURIComponent(candidate.prenom + ' ' + candidate.nom)}" 
+                                crossorigin="anonymous"
+                                alt="Photo de ${candidate.prenom} ${candidate.nom}"
+                                 style="width: 80px; height: 80px; border-radius: 30%; object-fit: cover; border: 2px solid var(--primary-color);">
+                            </a>
+                            <div>
+                                <strong>${candidate.prenom} ${candidate.nom}</strong><br>
+                                <small>${candidate.cycle_display} - ${candidate.specialite} ${candidate.niveau} - ${candidate.campus}</small><br>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                                    <div style="width: 16px; height: 16px; border-radius: 50%; background: ${candidate.bureau_color}; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>
+                                    <small>"${candidate.slogan}"</small><br>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="result-bar-container">
+                            <div class="result-bar" style="width: ${percentage}%">
+                                ${candidate.votes} vote(s) (${percentage.toFixed(1)}%)
+                            </div>
+                        </div>
+                    </div>
+                `;
+                 console.log("Before resultsContainer.appendChild(candidateDiv);", state.candidates.length);
+
+                    
+                resultsContainer.appendChild(candidateDiv);
+                
+                if(state.electionStatus === 'closed'){
+                    const candidateDivClone = candidateDiv.cloneNode(true); // true pour cloner profondément
+                    resultsContainerEtudiant.appendChild(candidateDivClone);
+                }
+                
+            });
+        }
+
+        function renderUsersList() {
+            usersList.innerHTML = '';
+            if (state.allUsers.length === 0) {
+                usersList.innerHTML = '<p>Aucun utilisateur enregistré.</p>';
+                return;
+            }
+            // Afficher le nombre total d'inscrits
+            const countDiv = document.createElement('div');
+            countDiv.className = 'list-item';
+            countDiv.innerHTML = `
+                <div><h4>Total des inscrits : ${state.allUsers.length-state.pendingUsers.length}</h4></div>
+                <div><h4>Total en attente : ${state.pendingUsers.length}</h4></div>
+            `;
+            usersList.appendChild(countDiv);
+            
+            // Afficher la liste des Etudiants
+            state.allUsers.forEach(user => {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'list-item';
+                userDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 15px; flex-grow: 1;">
+                        <a href="${user.photo_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
+                            <img src="${user.photo_url || 'https://api.dicebear.com/8.x/initials/svg?seed=' + encodeURIComponent(user.prenom + ' ' + user.nom)}" 
+                            crossorigin="anonymous"
+                            alt="Photo de ${user.prenom} ${user.nom}"
+                             style="width: 80px; height: 80px; border-radius: 30%; object-fit: cover; border: 2px solid var(--primary-color);">
+                        </a>
+                        <div>
+                            <strong>${user.prenom} ${user.nom}</strong> (${user.matricule})<br>
+                            <strong>${user.cycle_display} - ${user.specialite} ${user.niveau} - ${user.campus}</strong><br>
+                            <span class="status-${user.status}">${user.status === 'pending' ? 'En attente' : 'Validée'}</span>
+                            ${user.status === 'pending' ? ' - ❌ Ne peut pas voter': user.has_voted ? ' - ✅ A voté' : ' - ❌ N\'a pas voté'}
+                        </div>
+                    </div>
+                    
+                `;
+                console.log(user.status)
+                console.log(user.status === 'validated')
+                if(user.status === 'validated' ){
+                    userDiv.innerHTML += `
+                        <button class="btn btn-danger" data-user-id="${user.id}">
+                            <i class="fas fa-times"></i> Désactiver
+                        </button>
+                    `;
+                }
+                usersList.appendChild(userDiv);
+            });
+        }
+
+        // =================================================================
+        // INITIALISATION
+        // =================================================================
+        console.log('🚀 Démarrage de l application');
+        checkSession();
+
+    });
+    </script>
+
+</body>
+</html>
