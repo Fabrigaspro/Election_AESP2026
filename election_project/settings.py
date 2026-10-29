@@ -67,11 +67,12 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'vote_app.api_language.ApiLanguageMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    #'vote_app.middleware.SessionManagementMiddleware',
+    'vote_app.middleware.SessionManagementMiddleware',
 ]
 
 ROOT_URLCONF = 'election_project.urls'
