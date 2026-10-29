@@ -417,8 +417,6 @@ def dashboard_data_view(request):
         pending_users = [user_to_dict(u) for u in User.objects.filter(profile__status='pending').order_by('first_name', 'last_name')]
         all_users = [user_to_dict(u) for u in User.objects.filter(profile__is_admin=False).order_by('first_name', 'last_name')]
 
-    print("dashboard_data GOODDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
-
     return JsonResponse({
         'user': user_to_dict(request.user),
         'election_status': election.status,
