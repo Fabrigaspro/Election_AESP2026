@@ -18,7 +18,7 @@ SECRET_KEY = env('SECRET_KEY')
 if ENVIRONMENT == "development":
     DEBUG = True  
 else:
-    DEBUG = False  
+    DEBUG = True  
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'electionaesp2026iuget.up.railway.app', '.railway.app', ]
 
@@ -34,7 +34,7 @@ CSRF_COOKIE_HTTPONLY = False  # Doit être False pour que JavaScript puisse lire
 CSRF_USE_SESSIONS = False
 CSRF_FAILURE_VIEW = 'django.views.csrf.csrf_failure'
 
-#CSRF_COOKIE_DOMAIN = '.railway.app'  # Pour tous les sous-domaines Railway
+CSRF_COOKIE_DOMAIN = '.railway.app'  # Pour tous les sous-domaines Railway
 CSRF_COOKIE_SAMESITE = 'Lax'  # 'None' peut causer des problèmes
 
 # Configuration session
@@ -186,5 +186,4 @@ REGISTER_MAX_PER_IP_PER_HOUR = 15            # limite anti-abus (coût IA + faux
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
