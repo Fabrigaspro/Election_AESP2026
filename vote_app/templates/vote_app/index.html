@@ -338,6 +338,38 @@
         .list-item:nth-child(even) {
             background: var(--light-gray);
         }
+        
+        .users-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .users-header h3 { margin: 0; }
+        #userSearch {
+            flex: 1;
+            min-width: 220px;
+            max-width: 420px;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        .users-filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .users-filters select {
+            flex: 1;
+            min-width: 150px;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
 
         .status-pending {
             color: var(--pending-color);
@@ -1391,8 +1423,33 @@
 
             <!-- Contenu Admin: Gestion des utilisateurs -->
             <div id="usersContent" class="admin-content card">
-                <h3>Gestion des Étudiants</h3>
+                <div class="users-header">
+                    <h3>Gestion des Étudiants</h3>
+                    <input type="search" id="userSearch" placeholder="🔍 Rechercher un nom ou un matricule..." autocomplete="off">
+                </div>
+                <div class="users-filters">
+                    <select id="userFilterCycle">
+                        <option value="">Tous les cycles</option>
+                        <option value="bts">BTS</option>
+                        <option value="hnd">HND</option>
+                        <option value="lipro">Licence Professionnelle</option>
+                        <option value="litech">Licence de Technologie</option>
+                        <option value="bachelor">Bachelor of Technology</option>
+                        <option value="master">Master</option>
+                        <option value="ingenieur">Ingénieur</option>
+                    </select>
+                    <select id="userFilterSpecialite">
+                        <option value="">Toutes les spécialités</option>
+                    </select>
+                    <select id="userFilterVote">
+                        <option value="">Vote : tous</option>
+                        <option value="voted">✅ A voté</option>
+                        <option value="not_voted">❌ N'a pas voté</option>
+                    </select>
+                    <button id="userFilterReset" class="btn" type="button">Réinitialiser</button>
+                </div>
                 <h4>Liste des Étudiants inscrits à l'AESP</h4>
+                <p id="usersCount" style="margin: 5px 0 10px; color: #666;"></p>
                 <div id="usersList"></div>
             </div>
         </div>
@@ -1445,6 +1502,12 @@
         const resultsContainer = document.getElementById('resultsContainer');
         const resultsContainerEtudiant = document.getElementById('resultsContainerEtudiant');
         const usersList = document.getElementById('usersList');
+        const userSearch = document.getElementById('userSearch');
+        const userFilterCycle = document.getElementById('userFilterCycle');
+        const userFilterSpecialite = document.getElementById('userFilterSpecialite');
+        const userFilterVote = document.getElementById('userFilterVote');
+        const userFilterReset = document.getElementById('userFilterReset');
+        const usersCount = document.getElementById('usersCount');
         const photoPreview = document.getElementById('photoPreview');
         const recuPreview = document.getElementById('recuPreview');
         const registerPhoto = document.getElementById('registerPhoto');
@@ -2919,25 +2982,96 @@
             });
         }
 
+        // Minuscules, sans accents : "Éric" == "eric"
+        function normalizeText(s) {
+            return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+        }
+        
+        // Les spécialités proposées dépendent du cycle choisi et des données réelles
+        function refreshSpecialiteOptions() {
+            const cycle = userFilterCycle.value;
+            const previous = userFilterSpecialite.value;
+            const specs = [...new Set(
+                state.allUsers
+                    .filter(u => !cycle || u.cycle === cycle)
+                    .map(u => u.specialite)
+                    .filter(Boolean)
+            )].sort();
+        
+            userFilterSpecialite.innerHTML = '<option value="">Toutes les spécialités</option>';
+            specs.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                userFilterSpecialite.appendChild(opt);
+            });
+            userFilterSpecialite.value = specs.includes(previous) ? previous : '';
+        }
+        
+        function getFilteredUsers() {
+            // Plusieurs mots possibles, dans n'importe quel ordre : "kouatchou 24iu"
+            const terms = normalizeText(userSearch.value).split(/\s+/).filter(Boolean);
+            const cycle = userFilterCycle.value;
+            const spec = userFilterSpecialite.value;
+            const vote = userFilterVote.value;
+        
+            return state.allUsers.filter(u => {
+                const haystack = normalizeText(`${u.prenom} ${u.nom} ${u.matricule}`);
+                if (!terms.every(t => haystack.includes(t))) return false;
+                if (cycle && u.cycle !== cycle) return false;
+                if (spec && u.specialite !== spec) return false;
+                if (vote === 'voted' && !u.has_voted) return false;
+                // "N'a pas voté" = inscrit validé qui n'a pas encore voté (les comptes en attente ne peuvent pas voter)
+                if (vote === 'not_voted' && !(u.status === 'validated' && !u.has_voted)) return false;
+                return true;
+            });
+        }
+        
+        let userSearchTimer = null;
+        userSearch.addEventListener('input', () => {
+            clearTimeout(userSearchTimer);
+            userSearchTimer = setTimeout(renderUsersList, 200);   // évite de tout redessiner à chaque lettre
+        });
+        userFilterCycle.addEventListener('change', renderUsersList);
+        userFilterSpecialite.addEventListener('change', renderUsersList);
+        userFilterVote.addEventListener('change', renderUsersList);
+        userFilterReset.addEventListener('click', () => {
+            userSearch.value = '';
+            userFilterCycle.value = '';
+            userFilterVote.value = '';
+            refreshSpecialiteOptions();
+            renderUsersList();
+        });
+
         function renderUsersList() {
             usersList.innerHTML = '';
             if (state.allUsers.length === 0) {
+                usersCount.textContent = '';
                 usersList.innerHTML = '<p>Aucun étudiant enregistré.</p>';
                 return;
             }
-            // Afficher le nombre total d'inscrits
+        
+            refreshSpecialiteOptions();
+            const users = getFilteredUsers();
+            usersCount.textContent = `${users.length} étudiant(s) affiché(s) sur ${state.allUsers.length}`;
+        
+            // Totaux globaux (inchangés)
             const countDiv = document.createElement('div');
             countDiv.className = 'list-item';
             countDiv.innerHTML = `
                 <div><h4>Total des inscrits : ${state.allUsers.length-state.pendingUsers.length}</h4></div>
                 <div><h4>Total en attente : ${state.pendingUsers.length}</h4></div>
                 <div><h4>Total des votes : ${state.allUsers.filter(user => user.has_voted).length}</h4></div>
-                
             `;
             usersList.appendChild(countDiv);
-            
+        
+            if (users.length === 0) {
+                usersList.insertAdjacentHTML('beforeend', '<p>Aucun étudiant ne correspond à cette recherche.</p>');
+                return;
+            }
+
             // Afficher la liste des Etudiants
-            state.allUsers.forEach(user => {
+            users.forEach(user => {
                 const userDiv = document.createElement('div');
                 userDiv.className = 'list-item';
                 userDiv.innerHTML = `
@@ -2957,8 +3091,6 @@
                     </div>
                     
                 `;
-                console.log(user.status)
-                console.log(user.status === 'validated')
                 if(user.status === 'validated' ){
                     userDiv.innerHTML += `
                         <button class="btn btn-danger" data-user-id="${user.id}">
