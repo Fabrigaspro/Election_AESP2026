@@ -3056,12 +3056,15 @@
             usersCount.textContent = `${users.length} étudiant(s) affiché(s) sur ${state.allUsers.length}`;
         
             // Totaux globaux (inchangés)
+            const totalInscrits = users.filter(u => u.status === 'validated').length;
+            const totalVotes = users.filter(u => u.has_voted).length;
+            
             const countDiv = document.createElement('div');
             countDiv.className = 'list-item';
             countDiv.innerHTML = `
-                <div><h4>Total des inscrits : ${state.allUsers.length-state.pendingUsers.length}</h4></div>
+                <div><h4>Total des inscrits : ${totalInscrits}</h4></div>
                 <div><h4>Total en attente : ${state.pendingUsers.length}</h4></div>
-                <div><h4>Total des votes : ${state.allUsers.filter(user => user.has_voted).length}</h4></div>
+                <div><h4>Total des votes : ${totalVotes}</h4></div>
             `;
             usersList.appendChild(countDiv);
         
