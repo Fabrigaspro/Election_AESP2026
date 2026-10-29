@@ -71,7 +71,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'vote_app.middleware.SessionManagementMiddleware',
+    #'vote_app.middleware.SessionManagementMiddleware',
 ]
 
 ROOT_URLCONF = 'election_project.urls'
