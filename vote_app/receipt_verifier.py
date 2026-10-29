@@ -21,22 +21,22 @@ import base64
 import hashlib
 import io
 import json
-import logging
 import re
 import unicodedata
 from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 
+import logging
+logger = logging.getLogger(__name__)
+
 try:                                   # OpenCV est facultatif : sans lui, le QR code n'est simplement pas lu
     import cv2
     import numpy as np
-except ImportError:                    # pragma: no cover
+except Exception as e:
+    logger.warning("Import OpenCV impossible : %r", e)
     cv2 = None
     np = None
-
 from django.conf import settings
-
-logger = logging.getLogger(__name__)
 
 MAX_SIDE_PX = 1600          # taille max envoyée à l'IA (réduit le coût et la latence)
 MAX_UPLOAD_BYTES = 8 * 1024 * 1024
