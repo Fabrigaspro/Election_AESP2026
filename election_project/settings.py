@@ -34,7 +34,7 @@ CSRF_COOKIE_HTTPONLY = False  # Doit être False pour que JavaScript puisse lire
 CSRF_USE_SESSIONS = False
 CSRF_FAILURE_VIEW = 'django.views.csrf.csrf_failure'
 
-CSRF_COOKIE_DOMAIN = '.railway.app'  # Pour tous les sous-domaines Railway
+#CSRF_COOKIE_DOMAIN = '.railway.app'  # Pour tous les sous-domaines Railway
 CSRF_COOKIE_SAMESITE = 'Lax'  # 'None' peut causer des problèmes
 
 # Configuration session
