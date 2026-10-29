@@ -20,7 +20,7 @@ if ENVIRONMENT == "development":
 else:
     DEBUG = False  
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'electionaesp2025iuget.up.railway.app', '.railway.app', ]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'electionaesp2026iuget.up.railway.app', '.railway.app', ]
 
 # ⚠️ Pour Railway - Configuration de sécurité
 CSRF_TRUSTED_ORIGINS = [
@@ -103,7 +103,7 @@ DATABASES = {
     }
 } 
 
-POSTGRES_LOCALLY = False
+POSTGRES_LOCALLY = True
 if ENVIRONMENT == 'production' or POSTGRES_LOCALLY == True:
     import dj_database_url
     DATABASES['default']=dj_database_url.parse(env('DATABASE_URL'))
