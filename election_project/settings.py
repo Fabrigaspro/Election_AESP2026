@@ -154,6 +154,34 @@ CLOUDINARY_STORAGE = {
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.RawMediaCloudinaryStorage'
 
 
+# --- Vérification automatique du reçu étudiant par IA ---
+# Clé API à définir dans les variables d'environnement Railway (jamais dans le code).
+# Sans clé, les inscriptions restent "en attente" pour validation manuelle.
+ANTHROPIC_API_KEY = env('ANTHROPIC_API_KEY', default='')
+RECEIPT_AI_MODEL = env('RECEIPT_AI_MODEL', default='claude-haiku-5-5')
+RECEIPT_AI_TIMEOUT = 25                      # secondes (gunicorn coupe à 30 s par défaut)
+ACADEMIC_YEAR = env('ACADEMIC_YEAR', default='2026/2027')   # année du scrutin
+ECOLE = env('ECOLE', default='SOUTH POLYTECH')   # année du scrutin
+RECEIPT_EXPECTED_AMOUNT = env.int('RECEIPT_EXPECTED_AMOUNT', default=0)  # FCFA, 0 = ne pas contrôler
+RECEIPT_REQUIRE_QR = True
+RECEIPT_NAME_THRESHOLD = 0.85                # tolérance de lecture par mot du nom
+RECEIPT_MIN_CONFIDENCE = 0.6                 # confiance minimale de lecture
+RECEIPT_REQUIRE_YEAR = env.bool('RECEIPT_REQUIRE_YEAR', default=True)
+RECEIPT_REQUIRE_ECOLE = env.bool('RECEIPT_REQUIRE_YEAR', default=True)
+RECEIPT_STRICT_SPECIALITE = env.bool('RECEIPT_STRICT_SPECIALITE', default=False)  # True = une spécialité différente bloque la validation auto
+# Moteur de lecture du reçu : 'auto' (Claude -> OCR.space -> OCR local, selon les clés présentes), 'claude', 'ocrspace' ou 'ocr'
+RECEIPT_ENGINE = env('RECEIPT_ENGINE', default='auto')
+# OCR.space (gratuit : ~25 000 requêtes/mois, images <= 1 Mo). Clé à mettre dans Railway : OCR_SPACE_API_KEY
+OCR_SPACE_API_KEY = env('OCR_SPACE_API_KEY', default='')
+OCR_SPACE_URL = env('OCR_SPACE_URL', default='https://api.ocr.space/parse/image')
+OCR_SPACE_LANGUAGE = env('OCR_SPACE_LANGUAGE', default='fre')
+OCR_SPACE_ENGINE = env.int('OCR_SPACE_ENGINE', default=2)      # 1 ou 2
+OCR_SPACE_TIMEOUT = 25                       # secondes
+OCR_SPACE_CONFIDENCE = 0.85                  # OCR.space ne donne pas de confiance : valeur fixe
+# Mots qui doivent figurer sur un vrai reçu (en-tête de l'établissement), sans espaces ni accents
+RECEIPT_ISSUER_KEYWORDS = ['IUGET', 'SOUTHPOLYTECH']
+REGISTER_MAX_PER_IP_PER_HOUR = 15            # limite anti-abus (coût IA + faux comptes)
+
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

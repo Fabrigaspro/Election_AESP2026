@@ -4,14 +4,15 @@ from .models import Profile, Candidate, ElectionState, Vote
 from django.utils.html import format_html
 
 # Personnalisation basique de l'interface
-admin.site.site_header = "ELECTION AESP - Système de Vote"
+admin.site.site_header = "ÉLECTION DU GOUVERNEUR AESP - Système de Vote"
 admin.site.site_title = "AESP Voting Admin"
 admin.site.index_title = "Tableau de bord"
 
 @admin.register(Profile)
 class CustomUserAdmin(admin.ModelAdmin):
-    list_display = ('matricule','get_fullname','telephone', 'role', 'status', 'campus', 'cycle', 'specialite', 'niveau', 'is_connected', 'last_activity', 'is_actually_connected', 'has_active_session', 'session_expires', 'session_token', 'has_voted', 'is_admin', 'photo', 'recu')
-    list_filter = ('matricule', 'role', 'status', 'cycle', 'niveau', 'campus')
+    list_display = ('matricule','get_fullname','telephone', 'role', 'status', 'campus', 'cycle', 'specialite', 'niveau', 'is_connected', 'last_activity', 'is_actually_connected', 'has_active_session', 'session_expires', 'session_token', 'has_voted', 'is_admin', 'photo', 'recu', 'verification_source', 'verification_score')
+    list_filter = ('matricule', 'role', 'status', 'cycle', 'niveau', 'campus', 'verification_source')
+    readonly_fields = ('recu_hash', 'verification_source', 'verification_score', 'verification_note', 'verified_at')
     search_fields = ('cycle', 'niveau',)
 
     def get_fullname(self, obj):

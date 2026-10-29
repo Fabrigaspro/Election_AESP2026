@@ -16,6 +16,8 @@ from .models import Profile, Candidate, ElectionState, Vote
 from django.utils import timezone
 from datetime import timedelta
 from django.db import transaction, IntegrityError
+from django.core.cache import cache
+from . import receipt_verifier
 
 # Méthodes utilitaires pour les choix dynamiques
 def get_specialites_by_cycle(cycle):
@@ -102,6 +104,9 @@ def user_to_dict(user):
         'status': user.profile.status,
         'has_voted': user.profile.has_voted,
         'is_admin': user.profile.is_admin,
+        'verification_source': user.profile.verification_source,
+        'verification_score': user.profile.verification_score,
+        'verification_note': user.profile.verification_note,
     }
 
 
@@ -147,63 +152,146 @@ def validate_image_upload(file_obj, allowed_exts=None, max_size_mb=10):
 # VUES API  electionStatusMessage
 # ===============================================
 
-@csrf_exempt # Enregistrement d'un nouvel étudiant
+def _client_ip(request):
+    """IP du client derrière le proxy Railway (dernier saut ajouté par le proxy)."""
+    xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    if xff:
+        return xff.split(',')[-1].strip()
+    return request.META.get('REMOTE_ADDR', 'inconnue')
+
+
+def _register_rate_limited(request):
+    """Limite le nombre d'inscriptions par IP et par heure (coût IA + faux comptes)."""
+    limit = getattr(settings, 'REGISTER_MAX_PER_IP_PER_HOUR', 15)
+    key = f'register_attempts:{_client_ip(request)}'
+    attempts = cache.get(key, 0) + 1
+    cache.set(key, attempts, 3600)
+    return attempts > limit
+
+
+@csrf_exempt # Enregistrement d'un nouvel étudiant, avec vérification IA du reçu
 def register_view(request):
-    if request.method == 'POST':
-        data = request.POST
-        matricule = data.get('matricule')
-        if not matricule:
-            return JsonResponse({'error': 'Matricule manquant.'}, status=400)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
 
-        if User.objects.filter(username=matricule).exists():
-            return JsonResponse({'error': 'Ce matricule est déjà utilisé.'}, status=400)
+    data = request.POST
+    matricule = (data.get('matricule') or '').strip()
+    nom = (data.get('nom') or '').strip()
+    prenom = (data.get('prenom') or '').strip()
+    password = data.get('password')
 
-        # Valider les fichiers uploadés (photo, recu)
-        photo_file = request.FILES.get('photo')
-        recu_file = request.FILES.get('recu')
+    if not matricule:
+        return JsonResponse({'error': 'Matricule manquant.'}, status=400)
+    if not nom or not prenom:
+        return JsonResponse({'error': 'Nom et prénom obligatoires.'}, status=400)
+    if not password:
+        return JsonResponse({'error': 'Mot de passe manquant.'}, status=400)
 
-        ok, msg = validate_image_upload(photo_file)
-        if not ok:
-            return JsonResponse({'error': f'Photo invalide: {msg}'}, status=400)
+    if User.objects.filter(username=matricule).exists():
+        return JsonResponse({'error': 'Ce matricule est déjà utilisé.'}, status=400)
 
-        ok, msg = validate_image_upload(recu_file)
-        if not ok:
-            return JsonResponse({'error': f'Reçu invalide: {msg}'}, status=400)
+    # Valider les fichiers uploadés (photo, recu)
+    photo_file = request.FILES.get('photo')
+    recu_file = request.FILES.get('recu')
+    if not photo_file:
+        return JsonResponse({'error': 'La photo de profil est obligatoire.'}, status=400)
+    if not recu_file:
+        return JsonResponse({'error': 'Le reçu est obligatoire.'}, status=400)
 
-        try:
-            with transaction.atomic():
-                # Crée l'utilisateur Django
-                user = User.objects.create_user(
-                    username=matricule,
-                    password=data.get('password'),
-                    first_name=data.get('nom', ''),
-                    last_name=data.get('prenom', '')
-                )
+    ok, msg = validate_image_upload(photo_file)
+    if not ok:
+        return JsonResponse({'error': f'Photo invalide: {msg}'}, status=400)
 
-                # Crée le profil associé
-                Profile.objects.create(
-                    user=user,
-                    campus=data.get('campus', ''),
-                    cycle=data.get('cycle', ''),
-                    specialite=data.get('specialite', ''),
-                    niveau=data.get('niveau', ''),
-                    telephone=data.get('telephone', ''),
-                    photo=photo_file,
-                    recu=recu_file
-                )
+    ok, msg = validate_image_upload(recu_file)
+    if not ok:
+        return JsonResponse({'error': f'Reçu invalide: {msg}'}, status=400)
 
-        except IntegrityError:
-            return JsonResponse({'error': 'Erreur base de données lors de la création du compte.'}, status=500)
-        except Exception as e:
-            # tentative de suppression au cas où un enregistrement partiel aurait persisté
+    if _register_rate_limited(request):
+        return JsonResponse({'error': 'Trop de tentatives. Réessayez dans une heure.'}, status=429)
+
+    # --- Analyse du reçu : lecture par l'IA puis comparaison avec le formulaire ---
+    try:
+        jpeg_bytes, recu_hash = receipt_verifier.prepare_image(recu_file)
+    except receipt_verifier.ReceiptImageError as e:
+        return JsonResponse({'error': f'Reçu invalide: {e}'}, status=400)
+
+    # Un même reçu ne peut servir qu'à un seul compte
+    if Profile.objects.filter(recu_hash=recu_hash).exists():
+        return JsonResponse({
+            'error': 'Ce reçu a déjà été utilisé pour une autre inscription. '
+                     'Si c\'est une erreur, contactez l\'administrateur.'
+        }, status=400)
+
+    cycle = data.get('cycle', '')
+    specialite = data.get('specialite', '')
+    specialite_label = dict(get_specialites_by_cycle(cycle)).get(specialite, specialite)
+    verdict = receipt_verifier.verify_receipt({
+        'nom': nom, 'prenom': prenom, 'matricule': matricule,
+        'cycle': cycle, 'niveau': data.get('niveau', ''), 'campus': data.get('campus', ''),
+        'specialite': specialite, 'specialite_label': specialite_label,
+    }, jpeg_bytes)
+
+    auto_validated = verdict.validated
+    user = None
+    try:
+        with transaction.atomic():
+            # Crée l'utilisateur Django
+            user = User.objects.create_user(
+                username=matricule,
+                password=password,
+                first_name=nom,
+                last_name=prenom
+            )
+
             try:
-                user.delete()
-            except Exception:
-                pass
-            return JsonResponse({'error': 'Problème lors de la création du profil. Connexion instable'}, status=400)
+                niveau = int(data.get('niveau') or 0)
+            except (TypeError, ValueError):
+                niveau = 0
 
-        return JsonResponse({'success': 'Inscription réussie ! Votre compte est en attente de validation.'})
-    return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+            # Crée le profil associé
+            Profile.objects.create(
+                user=user,
+                campus=data.get('campus', ''),
+                cycle=data.get('cycle', ''),
+                specialite=data.get('specialite', ''),
+                niveau=niveau,
+                telephone=data.get('telephone', ''),
+                photo=photo_file,
+                recu=recu_file,
+                status='validated' if auto_validated else 'pending',
+                recu_hash=recu_hash,
+                verification_source='ai' if auto_validated else '',
+                verification_score=verdict.score,
+                verification_note=verdict.note(),
+                verified_at=timezone.now() if auto_validated else None,
+            )
+
+    except IntegrityError:
+        return JsonResponse({'error': 'Erreur base de données lors de la création du compte.'}, status=500)
+    except Exception:
+        # tentative de suppression au cas où un enregistrement partiel aurait persisté
+        try:
+            if user is not None:
+                user.delete()
+        except Exception:
+            pass
+        return JsonResponse({'error': 'Problème lors de la création du profil. Connexion instable'}, status=400)
+
+    if auto_validated:
+        return JsonResponse({
+            'success': 'Inscription validée automatiquement.',
+            'status': 'validated',
+            'message': 'Votre reçu a été vérifié : votre compte est validé. '
+                       'Vous pouvez maintenant vous connecter.',
+        })
+
+    return JsonResponse({
+        'success': 'Inscription enregistrée, en attente de vérification.',
+        'status': 'pending',
+        'message': 'Votre inscription est enregistrée, mais votre reçu n\'a pas pu être '
+                   'confirmé automatiquement. Un administrateur va le vérifier.',
+        'reasons': verdict.failed_reasons(),
+    })
 
 @csrf_exempt # Connection d'un utilisateur
 def login_view(request):
@@ -213,6 +301,7 @@ def login_view(request):
             data = json.loads(request.body)
             matricule = data.get('matricule')
             password = data.get('password')
+            print("###########  matricule : ", matricule, "   ###########")
             
             user = authenticate(username=matricule, password=password)
             if user is not None:
@@ -395,6 +484,9 @@ def manage_user_status_view(request, user_id):
         new_status = data.get('status')
         if new_status in ['validated', 'pending']:
             profile_to_manage.status = new_status
+            if new_status == 'validated':
+                profile_to_manage.verification_source = 'admin'
+                profile_to_manage.verified_at = timezone.now()
             profile_to_manage.save()
             return JsonResponse(user_to_dict(user_to_manage))
         return JsonResponse({'error': 'Statut invalide.'}, status=400)

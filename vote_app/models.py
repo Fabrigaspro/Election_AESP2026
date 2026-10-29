@@ -107,7 +107,7 @@ class Profile(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     matricule = models.CharField(max_length=100, default='MAT')
-    campus = models.CharField(max_length=100 , default='Bonamoussadi')
+    campus = models.CharField(max_length=100 , default='Bonamoussadi A')
     cycle = models.CharField(max_length=100, choices=CYCLE_CHOICES, default='bts')
     specialite = models.CharField(max_length=100, blank=True, null=True)
     niveau = models.IntegerField(blank=True)
@@ -119,6 +119,18 @@ class Profile(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     has_voted = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
+
+    # --- Vérification automatique du reçu (IA) ---
+    # Empreinte SHA-256 du reçu envoyé : détecte le même reçu utilisé par deux comptes
+    recu_hash = models.CharField(max_length=64, blank=True, default='', db_index=True)
+    # Qui a validé le compte : 'ai' (automatique), 'admin' (manuel) ou '' (pas encore)
+    verification_source = models.CharField(max_length=10, blank=True, default='')
+    # Score de conformité reçu / formulaire, de 0 à 1
+    verification_score = models.FloatField(null=True, blank=True)
+    # Détail lisible des contrôles (affiché à l'administrateur)
+    verification_note = models.TextField(blank=True, default='')
+    verified_at = models.DateTimeField(null=True, blank=True)
+
     is_connected = models.BooleanField(default=False)
     last_activity = models.DateTimeField(default=timezone.now)
     session_token = models.CharField(max_length=64, blank=True, null=True, unique=True)
@@ -153,19 +165,23 @@ class Profile(models.Model):
     @property
     def has_active_session(self):
         """Vérifie si une session est active (non expirée)"""
-        print("self.is_admin : ", self.is_admin)
+        
+        # 1. Si ce n'est pas un admin et qu'il manque des infos de session
         if not self.is_admin and (not self.is_connected or not self.session_token or not self.session_expires):
-            # Session expirée - auto-nettoyage
-            self.is_connected = False
-            self.save()
+            if self.is_connected: # Eviter de faire un save() inutile
+                self.is_connected = False
+                self.save()
             return False
-        print("self.is_admin : ", self.is_admin)
-        
-        if self.is_admin and self.is_connected :
+            
+        # 2. Si c'est un admin et qu'il est connecté
+        if self.is_admin and self.is_connected:
             return True
-        
-        print("self.is_admin : ", self.is_admin)
-        # Vérifier si la session est expirée
+            
+        # 3. Sécurité : Si session_expires est vide, on ne peut pas comparer
+        if not self.session_expires:
+            return False
+    
+        # 4. Vérifier si la session est expirée
         if timezone.now() > self.session_expires:
             # Session expirée - auto-nettoyage
             self.is_connected = False
@@ -348,7 +364,7 @@ class Candidate(models.Model):
     cycle = models.CharField(max_length=100, choices=CYCLE_CHOICES, default='bts')
     specialite = models.CharField(max_length=100)
     niveau = models.CharField(max_length=50)
-    campus = models.CharField(max_length=100 , default='Bonamoussadi')
+    campus = models.CharField(max_length=100 , default='Bonamoussadi A')
     
     # Campagne
     slogan = models.TextField()

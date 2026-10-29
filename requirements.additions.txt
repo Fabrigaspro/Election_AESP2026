@@ -1,0 +1,4 @@
+Pillow
+anthropic
+rapidocr-onnxruntime
+requests

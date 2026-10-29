@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Élections AESP - South Polytech</title>
+    <title>Élection du Gouverneur AESP - South Polytech</title>
     <style>
         /* --- Styles Généraux --- */
         :root {
@@ -1040,7 +1040,7 @@
             <img src="{% static 'vote_app/images/AESP.png' %}" alt="Logo AESP" class="logo">
         </div>
         <div class="container">
-            <h1>Élections du Bureau de l'AESP 2025/2026</h1>
+            <h1>Élection du Gouverneur de l'AESP 2026/2027</h1>
             <p>Association des Étudiants de South Polytech</p>
         </div>
         <div class="logo-container">
@@ -1054,8 +1054,9 @@
             <div class="confirmation-box confirmation-success">
                 <div class="confirmation-title">✅ Inscription Réussie !</div>
                 <div class="confirmation-message">
-                    Votre inscription a été enregistrée avec succès.<br>
-                    Votre compte est en attente de validation par un administrateur.
+                    <span id="successMessage">Votre inscription a été enregistrée avec succès.<br>
+                    Votre compte est en attente de validation par un administrateur.</span>
+                    <ul id="successReasons" style="text-align:left; margin-top:10px; font-size:0.9em; display:none;"></ul>
                 </div>
                 <button class="confirmation-button" onclick="hideConfirmation('success')">OK</button>
             </div>
@@ -1174,8 +1175,12 @@
                         <img id="photoPreview" class="file-preview">
                     </div>
                     <div class="form-group" style="color: red;">
-                        <label for="registerRecu">Photo du reçu de paiement des frais d'inscription à l'AESP (1000 Fcfa)</label>
+                        <label for="registerRecu">Photo du reçu IUGET</label>
                         <input type="file" id="registerRecu" accept="image/*" required>
+                        <small style="color:#555; display:block; margin-top:4px;">
+                            Photo nette et entière du reçu. Votre matricule, votre nom, votre cycle, votre niveau et votre campus doivent y être
+                            lisibles et identiques à ce que vous avez saisi : ils sont vérifiés automatiquement pour valider votre compte.
+                        </small>
                         <img id="recuPreview" class="file-preview">
                     </div>
                     <button type="submit" class="btn btn-primary btn-block">S'inscrire</button>
@@ -1204,7 +1209,7 @@
             </div>
             
             <div class="vote-instructions">
-                <h3><i class="fas fa-vote-yea"></i> Élection du Bureau de l'AESP 2025/2026</h3>
+                <h3><i class="fas fa-vote-yea"></i> Élection du Gouverneur de l'AESP 2026/2027</h3>
                 <p>Choisissez votre candidat préféré en cliquant sur sa carte. Vous ne pourrez voter qu'une seule fois !</p>
             </div>
 
@@ -1749,8 +1754,19 @@
         // =================================================================
         // FONCTIONS DE CONFIRMATION
         // =================================================================
-        function showConfirmation(type, message = '') {
+        function showConfirmation(type, message = '', reasons = []) {
             if (type === 'success') {
+                if (message) {
+                    document.getElementById('successMessage').textContent = message;
+                }
+                const reasonsList = document.getElementById('successReasons');
+                reasonsList.innerHTML = '';
+                (reasons || []).forEach(r => {
+                    const li = document.createElement('li');
+                    li.textContent = r;           // textContent : pas d'injection HTML
+                    reasonsList.appendChild(li);
+                });
+                reasonsList.style.display = (reasons && reasons.length) ? 'block' : 'none';
                 document.getElementById('successConfirmation').style.display = 'flex';
             } else if (type === 'error') {
                 if (message) {
@@ -1925,7 +1941,7 @@
                     niveauSelect.disabled = false;
                     campusSelect.innerHTML = `
                         <option value="" disabled selected>Sélectionnez votre campus</option>
-                        <option value="Bonamoussadi">Bonamoussadi</option>
+                        <option value="Bonamoussadi A">Bonamoussadi A</option>
                         <option value="Bonaberi">Bonaberi</option>
                     `;
                     campusSelect.disabled = false;
@@ -1933,7 +1949,7 @@
                 }
                 else{
                     campusSelect.innerHTML = `
-                        <option value="Bonamoussadi">Bonamoussadi</option>
+                        <option value="Bonamoussadi A">Bonamoussadi A</option>
                     `;
                     campusSelect.disabled = false;
                 }
@@ -2014,7 +2030,7 @@
                     body: formData 
                 });
                 
-                showConfirmation('success');
+                showConfirmation('success', data.message, data.reasons);
                 registerForm.reset();
                 photoPreview.style.display = 'none';
                 recuPreview.style.display = 'none';
@@ -2366,6 +2382,10 @@
             }
         }
 
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
         function renderPendingUsers() {
             pendingUsersList.innerHTML = '';
             if (state.pendingUsers.length === 0) {
@@ -2390,6 +2410,8 @@
                         <a href="${user.recu_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
                             <i class="fas fa-file-invoice"></i> Voir le reçu
                         </a>
+                        ${user.verification_note ? `<div style="margin-top:6px; font-size:0.85em; color:#7a5b00; background:#fff8e1; border-left:3px solid #ffc107; padding:6px 8px; white-space:pre-line;">
+                            <strong><i class="fas fa-robot"></i> Contrôle automatique du reçu</strong><br>${escapeHtml(user.verification_note)}</div>` : ''}
                     </div>
                 </div>
                 <div style="display: flex; gap: 10px;">
@@ -2508,7 +2530,7 @@
                     niveauSelect.disabled = false;
                     campusSelect.innerHTML = `
                         <option value="" disabled selected>Sélectionnez votre campus</option>
-                        <option value="Bonamoussadi">Bonamoussadi</option>
+                        <option value="Bonamoussadi A">Bonamoussadi A</option>
                         <option value="Bonaberi">Bonaberi</option>
                     `;
                     campusSelect.disabled = false;
@@ -2516,7 +2538,7 @@
                 }
                 else{
                     campusSelect.innerHTML = `
-                        <option value="Bonamoussadi">Bonamoussadi</option>
+                        <option value="Bonamoussadi A">Bonamoussadi A</option>
                     `;
                     campusSelect.disabled = false;
                 }
