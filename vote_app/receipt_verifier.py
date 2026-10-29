@@ -592,17 +592,6 @@ def normalize_year(value):
     return f"{y1}/{y2}"
 
 
-def _to_amount(value):
-    if value is None or value == "":
-        return None
-    if isinstance(value, (int, float)):
-        return float(value)
-    digits = re.sub(r"[^\d,.]", "", str(value)).replace(",", ".")
-    try:
-        return float(digits)
-    except ValueError:
-        return None
-
 
 CYCLE_KEYWORDS = {
     "bts": ["bts"],
@@ -700,7 +689,15 @@ class Verdict:
 
     def failed_reasons(self):
         return [c.detail for c in self.checks if not c.ok]
-
+    @property
+    def rejected(self):
+        """Refus automatique : l'IA a bien analysé le reçu et au moins un contrôle obligatoire échoue.
+        Si l'analyse est indisponible (panne), on ne refuse pas : l'inscription reste en attente."""
+        return self.ai_available and not self.validated
+    
+    def rejection_reasons(self):
+        return [c.detail for c in self.checks if c.required and not c.ok]
+    
     def note(self):
         """Texte lisible pour l'administrateur."""
         head = "Validé automatiquement par l'IA" if self.validated else "À vérifier manuellement"
@@ -858,7 +855,6 @@ def compare(form, extracted, cfg=None):
     score = round(got / total, 3) if total else 0.0
 
     return Verdict("validated" if required_ok else "pending", score, checks, extracted, True)
-
 
 def verify_receipt(form, jpeg_bytes):
     """Point d'entrée : lit le reçu puis le compare au formulaire."""

@@ -231,6 +231,14 @@ def register_view(request):
         'specialite': specialite, 'specialite_label': specialite_label,
     }, jpeg_bytes)
 
+    # Refus immédiat : l'étudiant corrige et renvoie, rien n'est enregistré
+    if verdict.rejected:
+        return JsonResponse({
+            'error': 'Inscription refusée : votre reçu ne correspond pas aux informations saisies. '
+                     'Corrigez les points ci-dessous puis réessayez.',
+            'reasons': verdict.rejection_reasons(),
+        }, status=400)
+
     auto_validated = verdict.validated
     user = None
     try:
@@ -288,8 +296,8 @@ def register_view(request):
     return JsonResponse({
         'success': 'Inscription enregistrée, en attente de vérification.',
         'status': 'pending',
-        'message': 'Votre inscription est enregistrée, mais votre reçu n\'a pas pu être '
-                   'confirmé automatiquement. Un administrateur va le vérifier.',
+        'message': 'Votre inscription est enregistrée, mais l\'analyse automatique du reçu est '
+                   'momentanément indisponible. Un administrateur va le vérifier.',
         'reasons': verdict.failed_reasons(),
     })
 

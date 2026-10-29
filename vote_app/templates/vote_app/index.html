@@ -1068,6 +1068,7 @@
                 <div class="confirmation-message" id="errorMessage">
                     Une erreur est survenue lors de l'inscription.
                 </div>
+                <ul id="errorReasons" style="text-align:left; margin:10px 0; font-size:0.9em; display:none;"></ul>
                 <button class="confirmation-button" onclick="hideConfirmation('error')">OK</button>
             </div>
         </div>
@@ -1772,6 +1773,14 @@
                 if (message) {
                     document.getElementById('errorMessage').textContent = message;
                 }
+                const list = document.getElementById('errorReasons');
+                list.innerHTML = '';
+                (reasons || []).forEach(r => {
+                    const li = document.createElement('li');
+                    li.textContent = r;
+                    list.appendChild(li);
+                });
+                list.style.display = (reasons && reasons.length) ? 'block' : 'none';
                 document.getElementById('errorConfirmation').style.display = 'flex';
             }
         }
@@ -1817,7 +1826,9 @@
             const response = await fetch(url, options);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ error: 'Erreur de communication avec le serveur.' }));
-                throw new Error(errorData.error || `Erreur ${response.status}`);
+                const err = new Error(errorData.error || `Erreur ${response.status}`);
+                err.reasons = errorData.reasons || [];
+                throw err;
             }
             return response.json();
         }
@@ -2029,7 +2040,6 @@
                     method: 'POST', 
                     body: formData 
                 });
-                
                 showConfirmation('success', data.message, data.reasons);
                 registerForm.reset();
                 photoPreview.style.display = 'none';
@@ -2038,7 +2048,7 @@
                 hideMessage(registerSuccess);
                 resetPasswordToggles();        
             } catch (error) {
-                showConfirmation('error', error.message);
+                showConfirmation('error', error.message, error.reasons);
             } finally {
                 // Réactiver le bouton et cacher le loader
                 enableButtons([submitBtn]);
