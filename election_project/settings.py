@@ -24,7 +24,7 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'electionaesp2026iuget.up.railway.app
 
 # ⚠️ Pour Railway - Configuration de sécurité
 CSRF_TRUSTED_ORIGINS = [
-    'https://electionaesp2025iuget.up.railway.app',
+    'https://electionaesp2026iuget.up.railway.app',
     'https://*.railway.app',
 ]
 
