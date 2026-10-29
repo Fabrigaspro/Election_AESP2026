@@ -1,1 +1,1 @@
-web: gunicorn election_project.wsgi
+   web: python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn election_project.wsgi --bind 0.0.0.0:$PORT --timeout 60
