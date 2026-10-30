@@ -175,7 +175,7 @@ def register_view(request):
         return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
 
     data = request.POST
-    matricule = (data.get('matricule') or '').strip()
+    matricule = ''.join((data.get('matricule') or '').split()).upper()   # sans espaces, en majuscules
     nom = (data.get('nom') or '').strip()
     prenom = (data.get('prenom') or '').strip()
     password = data.get('password')
@@ -187,7 +187,7 @@ def register_view(request):
     if not password:
         return JsonResponse({'error': 'Mot de passe manquant.'}, status=400)
 
-    if User.objects.filter(username=matricule).exists():
+    if User.objects.filter(username__iexact=matricule).exists():
         return JsonResponse({'error': 'Ce matricule est déjà utilisé.'}, status=400)
 
     # Valider les fichiers uploadés (photo, recu)
@@ -307,9 +307,11 @@ def login_view(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            matricule = data.get('matricule')
+            matricule = (data.get('matricule') or '').strip()
             password = data.get('password')
-            print("###########  matricule : ", matricule, "   ###########")
+            existing = User.objects.filter(username__iexact=matricule).first()
+            if existing:
+                matricule = existing.username        # le vrai identifiant enregistré, avec sa casse d'origine
             
             user = authenticate(username=matricule, password=password)
             if user is not None:
