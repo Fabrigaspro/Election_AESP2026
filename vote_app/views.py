@@ -41,7 +41,7 @@ def get_niveaux_by_cycle(cycle):
 
         'lipro': [3],
         'litech': [3],
-        'bachelor': [3],
+        'bachelor': [1, 2, 3],
 
         'master': [4, 5],
 
