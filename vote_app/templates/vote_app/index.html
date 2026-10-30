@@ -1022,6 +1022,7 @@
             border-radius: 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
         }
         .lang-switch button.active { background: var(--primary-color, #1f2a48); color: #fff; border-color: var(--primary-color, #1f2a48); }
+            .candidates-grid.readonly .candidate-card:hover { transform: none; box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -1255,7 +1256,7 @@
             
             <div class="vote-instructions">
                 <h3><i class="fas fa-vote-yea"></i> Élection du Gouverneur de l'AESP 2026/2027</h3>
-                <p>Choisissez votre candidat préféré en cliquant sur sa carte. Vous ne pourrez voter qu'une seule fois !</p>
+                <p id="voteInstructionsText">Choisissez votre candidat préféré en cliquant sur sa carte. Vous ne pourrez voter qu'une seule fois !</p>
             </div>
 
             <div class="card">
@@ -1477,6 +1478,8 @@
 /* === Bilingue FR/EN : dictionnaire, t(), traduction du HTML statique, sélecteur === */
 (function () {
   var EN = {
+  "Découvrez les candidats ci-dessous. Le vote sera possible dès l'ouverture de l'élection.": "Discover the candidates below. Voting will be possible as soon as the election opens.",
+  "L'élection n'est pas encore ouverte. Le vote sera possible dès son ouverture.": "The election is not open yet. Voting will be possible as soon as it opens.",
   "Élection du Gouverneur AESP - South Polytech": "AESP Governor Election - South Polytech",
   "Chargement...": "Loading...",
   "Chargement de l'application...": "Loading the application...",
@@ -2482,9 +2485,18 @@
             selectedCandidateId = null;
             selectedCandidateInfo.style.display = 'none';
             console.log('state.electionStatus ::::', state.electionStatus)
+            // Le vote n'est possible que si l'élection est active
+            const canVote = state.electionStatus === 'active';
+            candidatesForVote.classList.toggle('readonly', !canVote);
+            const voteInstructions = document.getElementById('voteInstructionsText');
+            if (voteInstructions) {
+                voteInstructions.textContent = (state.electionStatus === 'pending')
+                    ? t("Découvrez les candidats ci-dessous. Le vote sera possible dès l'ouverture de l'élection.")
+                    : t("Choisissez votre candidat préféré en cliquant sur sa carte. Vous ne pourrez voter qu'une seule fois !");
+            }
             if (state.electionStatus == 'pending') {
-                electionStatusMessage.innerHTML = '<div class="message message-warning">' + t("L'élection n'est pas encore ouverte.") + '</div>';
-                return;
+                electionStatusMessage.innerHTML = '<div class="message message-warning">' + t("L'élection n'est pas encore ouverte. Le vote sera possible dès son ouverture.") + '</div>';
+                // pas de return : les candidats restent visibles, sans bouton de vote
             }
             if (state.electionStatus == 'closed') {
                 electionStatusMessage.innerHTML = '<div class="message message-warning">' + t("L'élection est terminée. Voici les résultats compilés: ") + '</div>';
@@ -2589,15 +2601,16 @@
                         <i class="fas fa-quote-right"></i>
                     </div>
                     
-                    <button class="vote-btn" data-candidate-id="${candidate.id}">
+                    ${canVote ? `<button class="vote-btn" data-candidate-id="${candidate.id}">
                         <i class="fas fa-vote-yea"></i> ${t("Choisir ce candidat")}
-                    </button>
+                    </button>` : ''}
                 `;
                 candidatesForVote.appendChild(candidateDiv);
             });
         }
         // Gestion de la sélection des candidats
         candidatesForVote.addEventListener('click', (e) => {
+            if (state.electionStatus !== 'active') return;   // consultation seule
             if (e.target.classList.contains('vote-btn') || e.target.closest('.vote-btn')) {
                 const voteBtn = e.target.classList.contains('vote-btn') ? e.target : e.target.closest('.vote-btn');
                 const candidateId = parseInt(voteBtn.dataset.candidateId);

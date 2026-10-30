@@ -405,7 +405,7 @@ def dashboard_data_view(request):
             'niveau': candidate.niveau,
             'campus': candidate.campus,
             'slogan': candidate.slogan,
-            'votes': candidate.votes,
+            'votes': candidate.votes if (election.status == 'closed' or is_user_admin(request.user)) else 0,
             'bureau_color': candidate.bureau_color,
             'bureau_name': candidate.bureau_name,
             'photo_url': candidate.photo_url.url if candidate.photo_url else None,  # Convertir Cloudinary en URL string

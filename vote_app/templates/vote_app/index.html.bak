@@ -1014,6 +1014,14 @@
             }
 
         }
+    
+        /* --- Sélecteur de langue --- */
+        .lang-switch { display: flex; justify-content: flex-end; gap: 4px; margin: 10px 0 0; }
+        .lang-switch button {
+            border: 1px solid #ccc; background: #fff; color: #333; padding: 4px 12px;
+            border-radius: 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+        }
+        .lang-switch button.active { background: var(--primary-color, #1f2a48); color: #fff; border-color: var(--primary-color, #1f2a48); }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -1081,6 +1089,10 @@
     </header>
 
     <main class="container">
+        <div class="lang-switch" aria-label="Langue / Language">
+            <button type="button" data-lang="fr">FR</button>
+            <button type="button" data-lang="en">EN</button>
+        </div>
         <!-- Boîtes de confirmation -->
         <div id="successConfirmation" class="confirmation-overlay">
             <div class="confirmation-box confirmation-success">
@@ -1462,6 +1474,229 @@
     </footer>
 
     <script>
+/* === Bilingue FR/EN : dictionnaire, t(), traduction du HTML statique, sélecteur === */
+(function () {
+  var EN = {
+  "Élection du Gouverneur AESP - South Polytech": "AESP Governor Election - South Polytech",
+  "Chargement...": "Loading...",
+  "Chargement de l'application...": "Loading the application...",
+  "Connexion en cours...": "Signing in...",
+  "Inscription en cours...": "Registering...",
+  "Enregistrement de votre vote...": "Recording your vote...",
+  "Enregistrement du candidat...": "Saving the candidate...",
+  "Supression du candidat...": "Deleting the candidate...",
+  "Élection du Gouverneur de l'AESP 2026/2027": "AESP Governor Election 2026/2027",
+  "Association des Étudiants de South Polytech": "South Polytech Students' Association",
+  "✅ Inscription Réussie !": "✅ Registration Successful!",
+  "Votre inscription a été enregistrée avec succès.": "Your registration has been recorded successfully.",
+  "Votre compte est en attente de validation par un administrateur.": "Your account is awaiting validation by an administrator.",
+  "❌ Erreur d'Inscription": "❌ Registration Error",
+  "Une erreur est survenue lors de l'inscription.": "An error occurred during registration.",
+  "Voir la vidéo tutorielle": "Watch the tutorial video",
+  "Connexion": "Login",
+  "Matricule": "Student ID",
+  "Mot de passe": "Password",
+  "Se connecter": "Log in",
+  "Pas encore de compte ?": "No account yet?",
+  "S'inscrire": "Sign up",
+  "Inscription Étudiant": "Student Registration",
+  "Nom": "Last name",
+  "Prénom": "First name",
+  "Matricule scolaire": "School student ID",
+  "Cycle": "Cycle",
+  "Sélectionnez votre cycle": "Select your cycle",
+  "Licence Professionnelle": "Professional Bachelor's (Licence Pro)",
+  "Licence de Technologie": "Technology Bachelor's (Licence Tech)",
+  "Ingénieur": "Engineering",
+  "Spécialité": "Specialty",
+  "Sélectionnez d'abord le cycle": "Select the cycle first",
+  "Sélectionnez votre spécialité": "Select your specialty",
+  "Sélectionnez votre niveau": "Select your level",
+  "Sélectionnez votre campus": "Select your campus",
+  "Sélectionnez d'abord la specialité": "Select the specialty first",
+  "Erreur de chargement": "Loading error",
+  "Niveau": "Level",
+  "Téléphone (Whatsapp)": "Phone (WhatsApp)",
+  "Confirmer le mot de passe": "Confirm password",
+  "Photo de profil": "Profile photo",
+  "Photo du reçu IUGET": "IUGET receipt photo",
+  "Photo nette et entière du reçu. Votre matricule, votre nom, votre cycle, votre niveau et votre campus doivent y être lisibles et identiques à ce que vous avez saisi : ils sont vérifiés automatiquement pour valider votre compte.": "A sharp, complete photo of the receipt. Your student ID, name, cycle, level and campus must be readable on it and identical to what you entered: they are checked automatically to approve your account.",
+  "Déjà un compte ?": "Already have an account?",
+  "Bienvenue !": "Welcome!",
+  "Votre inscription est en attente de validation par un administrateur.": "Your registration is awaiting validation by an administrator.",
+  "Veuillez patienter. Vous serez notifié(e) lorsque votre compte sera activé.": "Please wait. You will be notified when your account is activated.",
+  "Se déconnecter": "Log out",
+  "Choisissez votre candidat préféré en cliquant sur sa carte. Vous ne pourrez voter qu'une seule fois !": "Choose your preferred candidate by clicking on their card. You can only vote once!",
+  "Liste des Candidats": "List of Candidates",
+  "Candidat sélectionné :": "Selected candidate:",
+  "Confirmer mon vote": "Confirm my vote",
+  "Votre vote a été enregistrée avec succès.": "Your vote has been recorded successfully.",
+  "Les résultats seront annoncés à la fin de la période de vote.": "The results will be announced at the end of the voting period.",
+  "Vous pouvez à présent consulter les resultat des votes": "You can now view the voting results",
+  "Résultats de l'élection": "Election results",
+  "Merci étudiant(e) {name} d'avoir voté !": "Thank you, {name}, for voting!",
+  "Bienvenue, {name}": "Welcome, {name}",
+  "Tableau de Bord Administrateur": "Administrator Dashboard",
+  "Validation des Inscriptions": "Registration Validation",
+  "Gestion des Étudiants": "Student Management",
+  "Gestion des Candidats": "Candidate Management",
+  "Gestion de l'Élection": "Election Management",
+  "Voir les Résultats": "View Results",
+  "Étudiants en attente de validation": "Students awaiting validation",
+  "Ajouter un candidat": "Add a candidate",
+  "Nom du Bureau": "Team name",
+  "Ex: Bureau du renouveau": "e.g. Renewal Team",
+  "Slogan de campagne": "Campaign slogan",
+  "Ex: L'avenir ensemble !": "e.g. The future together!",
+  "Programme de campagne PDF": "Campaign programme (PDF)",
+  "Couleur du Bureau": "Team colour",
+  "Photo du candidat": "Candidate photo",
+  "Ajouter le candidat": "Add the candidate",
+  "Candidats actuels": "Current candidates",
+  "Statut de l'élection": "Election status",
+  "Statut actuel :": "Current status:",
+  "Démarrer l'élection": "Start the election",
+  "Terminer l'élection": "End the election",
+  "Réinitialiser l'élection": "Reset the election",
+  "Statistiques": "Statistics",
+  "Liste des Étudiants inscrits à l'AESP": "List of students registered with the AESP",
+  "© 2025 AESP - South Polytech. Tous droits réservés.": "© 2025 AESP - South Polytech. All rights reserved.",
+  "🔍 Rechercher un nom ou un matricule...": "🔍 Search by name or student ID...",
+  "Tous les cycles": "All cycles",
+  "Toutes les spécialités": "All specialties",
+  "Vote : tous": "Vote: all",
+  "✅ A voté": "✅ Has voted",
+  "❌ N'a pas voté": "❌ Has not voted",
+  "Réinitialiser": "Reset",
+  "{n} étudiant(s) affiché(s) sur {m}": "{n} of {m} student(s) shown",
+  "Aucun étudiant ne correspond à cette recherche.": "No student matches this search.",
+  "Total des inscrits : {n}": "Total registered: {n}",
+  "Total en attente : {n}": "Total pending: {n}",
+  "Total des votes : {n}": "Total votes: {n}",
+  "✅ Données mises à jour": "✅ Data updated",
+  "Erreur de communication avec le serveur.": "Communication error with the server.",
+  "Erreur {status}": "Error {status}",
+  "Erreur : {msg}": "Error: {msg}",
+  "Erreur lors du vote : {msg}": "Error while voting: {msg}",
+  "❌ Erreur lors de la réinitialisation : {msg}": "❌ Error while resetting: {msg}",
+  "Les mots de passe ne correspondent pas.": "Passwords do not match.",
+  "L'élection n'est pas encore ouverte.": "The election is not open yet.",
+  "L'élection est terminée. Voici les résultats compilés: ": "The election is over. Here are the compiled results: ",
+  "Aucun candidat enregistré.": "No candidate registered.",
+  "Aucun candidat n'est enregistré pour le moment.": "No candidate is registered at the moment.",
+  "L'élection n'a pas encore commencé.": "The election has not started yet.",
+  "L'élection est encore en cours...": "The election is still in progress...",
+  "Aucun étudiant en attente de validation.": "No student awaiting validation.",
+  "Aucun étudiant enregistré.": "No student registered.",
+  "Voir le programme": "View the programme",
+  "Voir le programme de campagne": "View campaign programme",
+  "Sélectionné": "Selected",
+  "Spécialité:": "Specialty:",
+  "Niveau:": "Level:",
+  "Bureau:": "Team:",
+  "Choisir ce candidat": "Choose this candidate",
+  "Voir le reçu": "View receipt",
+  "Contrôle automatique du reçu": "Automatic receipt check",
+  "Valider": "Approve",
+  "Supprimer": "Delete",
+  "Désactiver": "Deactivate",
+  "Votes totaux": "Total votes",
+  "Électeurs inscrits": "Registered voters",
+  "Taux de participation": "Turnout",
+  "Candidats": "Candidates",
+  "Attention :": "Warning:",
+  "La réinitialisation effacera tous les votes et remettra l'élection à zéro.": "Resetting will erase all votes and reset the election to zero.",
+  "En attente": "Pending",
+  "Validée": "Approved",
+  " - ❌ Ne peut pas voter": " - ❌ Cannot vote",
+  " - ✅ A voté": " - ✅ Has voted",
+  " - ❌ N'a pas voté": " - ❌ Has not voted",
+  "🟡 En attente": "🟡 Pending",
+  "🔴 Terminée": "🔴 Closed",
+  "Tutoriel d'utilisation": "User tutorial",
+  "Tutoriel de la plateforme de vote": "Voting platform tutorial",
+  "Appuyez sur Échap ou cliquez sur": "Press Esc or click",
+  "pour fermer": "to close",
+  "Veuillez sélectionner un candidat avant de voter.": "Please select a candidate before voting.",
+  "Êtes-vous sûr de vouloir voter pour {name} ?\n\nCette action est irréversible et vous ne pourrez plus modifier votre choix.": "Are you sure you want to vote for {name}?\n\nThis action is irreversible and you will no longer be able to change your choice.",
+  "Êtes-vous sûr de vouloir supprimer cet utilisateur ?": "Are you sure you want to delete this user?",
+  "Êtes-vous sûr de vouloir desactiver cet étudiant ?": "Are you sure you want to deactivate this student?",
+  "Vous ne pouvez pas ajouter un candidat pendant une élection active.": "You cannot add a candidate during an active election.",
+  "Veuillez remplir tous les champs obligatoires.": "Please fill in all required fields.",
+  "Vous ne pouvez pas supprimer un candidat pendant une élection active.": "You cannot delete a candidate during an active election.",
+  "Êtes-vous sûr de vouloir supprimer ce candidat ?": "Are you sure you want to delete this candidate?",
+  "Il doit y avoir au moins deux candidats pour démarrer l'élection.": "There must be at least two candidates to start the election.",
+  "Êtes-vous sûr de vouloir démarrer l'élection ?\n\nLes étudiants pourront commencer à voter.": "Are you sure you want to start the election?\n\nStudents will be able to start voting.",
+  "Êtes-vous sûr de vouloir terminer l'élection ?\n\nAucun vote ne pourra plus être effectué.": "Are you sure you want to end the election?\n\nNo more votes can be cast.",
+  "Êtes-vous sûr de vouloir démarrer l'élection ?": "Are you sure you want to start the election?",
+  "Êtes-vous sûr de vouloir terminer l'élection ?": "Are you sure you want to end the election?",
+  "🚨 ACTION IRRÉVERSIBLE 🚨\n\nÊtes-vous ABSOLUMENT sûr de vouloir réinitialiser l'élection ?\n\nCette action va :\n• Remettre tous les compteurs de votes à zéro\n• Réinitialiser le statut \"a voté\" pour tous les utilisateurs\n• Remettre l'élection en statut \"En attente\"\n\nCette action ne peut pas être annulée !": "🚨 IRREVERSIBLE ACTION 🚨\n\nAre you ABSOLUTELY sure you want to reset the election?\n\nThis action will:\n• Reset all vote counters to zero\n• Reset the \"has voted\" status for all users\n• Set the election back to \"Pending\"\n\nThis action cannot be undone!",
+  "Pour confirmer la réinitialisation, tapez \"RESET\" ci-dessous :": "To confirm the reset, type \"RESET\" below:",
+  "Réinitialisation annulée. Le texte de confirmation ne correspond pas.": "Reset cancelled. The confirmation text does not match.",
+  "✅ Élection réinitialisée avec succès !": "✅ Election reset successfully!"
+};
+  var stored = null;
+  try { stored = localStorage.getItem('lang'); } catch (e) {}
+  var lang = (stored === 'en' || stored === 'fr') ? stored : 'fr';
+  window.LANG = lang;
+  document.documentElement.lang = lang;
+
+  function saveLang(l) {
+    try { localStorage.setItem('lang', l); } catch (e) {}
+    var secure = location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = 'lang=' + l + '; path=/; max-age=31536000; SameSite=Lax' + secure;   // lu par le serveur
+  }
+  saveLang(lang);
+
+  function fill(s, vars) {
+    if (!vars) return s;
+    return s.replace(/\{(\w+)\}/g, function (m, k) { return (k in vars) ? vars[k] : m; });
+  }
+  window.t = function (fr, vars) {
+    var s = (lang === 'en' && Object.prototype.hasOwnProperty.call(EN, fr)) ? EN[fr] : fr;
+    return fill(s, vars);
+  };
+
+  function norm(s) { return s.replace(/\s+/g, ' ').trim(); }
+  function translateDOM() {
+    if (lang !== 'en') return;
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+    var nodes = [], n;
+    while ((n = walker.nextNode())) {
+      var p = n.parentNode && n.parentNode.nodeName;
+      if (p !== 'SCRIPT' && p !== 'STYLE') nodes.push(n);
+    }
+    nodes.forEach(function (node) {
+      var key = norm(node.nodeValue);
+      if (key && Object.prototype.hasOwnProperty.call(EN, key)) {
+        node.nodeValue = node.nodeValue.replace(/\S[\s\S]*\S|\S/, function () { return EN[key]; });
+      }
+    });
+    document.querySelectorAll('[placeholder],[title],[alt],[aria-label]').forEach(function (el) {
+      ['placeholder', 'title', 'alt', 'aria-label'].forEach(function (a) {
+        var v = el.getAttribute(a);
+        if (v && Object.prototype.hasOwnProperty.call(EN, norm(v))) el.setAttribute(a, EN[norm(v)]);
+      });
+    });
+    var title = norm(document.title);
+    if (Object.prototype.hasOwnProperty.call(EN, title)) document.title = EN[title];
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    translateDOM();
+    document.querySelectorAll('.lang-switch button').forEach(function (b) {
+      if (b.dataset.lang === lang) b.classList.add('active');
+      b.addEventListener('click', function () {
+        if (b.dataset.lang === lang) return;
+        saveLang(b.dataset.lang);
+        location.reload();          // tout le contenu dynamique est regénéré dans la nouvelle langue
+      });
+    });
+  });
+})();
+</script>
+
+<script>
         function hideConfirmation(type) {
             if (type === 'success') {
                 document.getElementById('successConfirmation').style.display = 'none';
@@ -1700,12 +1935,12 @@
                 case 'studentVotedView':
                     // Juste mettre à jour le message de bienvenue si nécessaire
                     if (state.currentUser) {
-                        studentWelcomeVotingMsg.textContent = `Merci étudiant(e) ${state.currentUser.prenom} ${state.currentUser.nom} d'avoir voté !`;
+                        studentWelcomeVotingMsg.textContent = t("Merci étudiant(e) {name} d'avoir voté !", {name: `${state.currentUser.prenom} ${state.currentUser.nom}`});
                         if(state.electionStatus == 'active'){ 
-                            secondParagraph.textContent = 'Les résultats seront annoncés à la fin de la période de vote.';
+                            secondParagraph.textContent = t('Les résultats seront annoncés à la fin de la période de vote.');
                         }
                         else if(state.electionStatus == 'closed'){ 
-                            secondParagraph.textContent = 'Vous pouvez à présent consulter les resultat des votes';
+                            secondParagraph.textContent = t('Vous pouvez à présent consulter les resultat des votes');
                         }
                     }
                     renderStudentVoteView();
@@ -1742,7 +1977,7 @@
                 font-size: 14px;
                 animation: slideIn 0.3s ease-out;
             `;
-            toast.innerHTML = '✅ Données mises à jour';
+            toast.innerHTML = t('✅ Données mises à jour');
             document.body.appendChild(toast);
             
             // Supprimer après 3 secondes
@@ -1801,7 +2036,7 @@
             return `
                 <a href="${bureauProg_link}">
                     <div class="bureau-badge" style="background: ${validColor};">
-                        <i class="fas fa-users"></i> Voir le programme
+                        <i class="fas fa-users"></i> ${t("Voir le programme")}
                     </div>
                 </a>
             `;
@@ -1888,8 +2123,8 @@
 
             const response = await fetch(url, options);
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: 'Erreur de communication avec le serveur.' }));
-                const err = new Error(errorData.error || `Erreur ${response.status}`);
+                const errorData = await response.json().catch(() => ({ error: t('Erreur de communication avec le serveur.') }));
+                const err = new Error(errorData.error || t('Erreur {status}', {status: response.status}));
                 err.reasons = errorData.reasons || [];
                 throw err;
             }
@@ -1966,17 +2201,17 @@
             const campusSelect = document.getElementById('registerCampus');
             
             // Vider les options actuelles
-            specialiteSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre spécialité</option>';
-            niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
-            campusSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre campus</option>';
+            specialiteSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez votre spécialité") + '</option>';
+            niveauSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez votre niveau") + '</option>';
+            campusSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez votre campus") + '</option>';
             specialiteSelect.disabled = true;
             niveauSelect.disabled = true;
             campusSelect.disabled = true;
 
             if (!cycle) {
-                specialiteSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord le cycle</option>';
-                niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord le cycle</option>';
-                campusSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord le cycle</option>';
+                specialiteSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez d'abord le cycle") + '</option>';
+                niveauSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez d'abord le cycle") + '</option>';
+                campusSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez d'abord le cycle") + '</option>';
                 return;
             }
             
@@ -1986,11 +2221,11 @@
                 const data = await response.json();
                 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Erreur de chargement');
+                    throw new Error(data.error || t('Erreur de chargement'));
                 }
                 
                 // Mettre à jour les spécialités
-                specialiteSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre spécialité</option>';
+                specialiteSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez votre spécialité") + '</option>';
                 data.specialites.forEach(specialite => {
                     const option = document.createElement('option');
                     option.value = specialite[0];  // La valeur (ex: 'informatique_bts')
@@ -2004,7 +2239,7 @@
                     if(cycle == 'licence'){
                         niveauSelect.innerHTML = '<option value="">3</option>';
                     }else{
-                        niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
+                        niveauSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez votre niveau") + '</option>';
                         data.niveaux.forEach(niveau => {
                             const option = document.createElement('option');
                             option.value = niveau; 
@@ -2014,7 +2249,7 @@
                     }
                     niveauSelect.disabled = false;
                     campusSelect.innerHTML = `
-                        <option value="" disabled selected>Sélectionnez votre campus</option>
+                        <option value="" disabled selected>${t("Sélectionnez votre campus")}</option>
                         <option value="Bonamoussadi A">Bonamoussadi A</option>
                         <option value="Bonaberi">Bonaberi</option>
                     `;
@@ -2030,24 +2265,24 @@
                     
             } catch (error) {
                 console.error('Erreur:', error);
-                specialiteSelect.innerHTML = '<option value="" disabled selected>Erreur de chargement</option>';
-                niveauSelect.innerHTML = '<option value="" disabled selected>Erreur de chargement</option>';
+                specialiteSelect.innerHTML = '<option value="" disabled selected>' + t("Erreur de chargement") + '</option>';
+                niveauSelect.innerHTML = '<option value="" disabled selected>' + t("Erreur de chargement") + '</option>';
             }
         }
         function updateNiveauBySpecialityIng(speciality) {
             const niveauSelect = document.getElementById('registerNiveau');
             let niveauxList  = [];
             // Vider les options actuelles
-            niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
+            niveauSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez votre niveau") + '</option>';
             niveauSelect.disabled = true;
             if (!speciality) {
-                niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord la specialité</option>';
+                niveauSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez d'abord la specialité") + '</option>';
                 return;
             }
             if (speciality == 'Prépa') { niveauxList  = [1, 2] }
             else { niveauxList  = [3, 4, 5] }
             // Mettre à jour les spécialités
-            niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
+            niveauSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez votre niveau") + '</option>';
             niveauxList.forEach(niveau => {
                 const option = document.createElement('option');
                 option.value = niveau;  // La valeur (ex: 'informatique_bts')
@@ -2076,7 +2311,7 @@
             const password = document.getElementById('registerPassword').value;
             const confirmPassword = document.getElementById('registerConfirmPassword').value;
             if (password !== confirmPassword) {
-                displayMessage(registerError, 'Les mots de passe ne correspondent pas.');
+                displayMessage(registerError, t('Les mots de passe ne correspondent pas.'));
                 return;
             }
         
@@ -2138,7 +2373,7 @@
                 });
                 state.currentUser = user;
                 loginForm.reset();
-                studentWelcomeMsg.textContent = `Bienvenue, ${state.currentUser.prenom} ${state.currentUser.nom}`;
+                studentWelcomeMsg.textContent = t('Bienvenue, {name}', {name: `${state.currentUser.prenom} ${state.currentUser.nom}`});
                 
                 checkSession();
                 resetPasswordToggles();
@@ -2214,10 +2449,10 @@
                 } else if (state.currentUser.status === 'validated') {
                     console.log("state.currentUser.status === 'validated'")
                     if (state.currentUser.has_voted) {
-                        studentWelcomeVotingMsg.textContent = `Merci étudiant(e) ${state.currentUser.prenom} ${state.currentUser.nom} d'avoir voté !`;
+                        studentWelcomeVotingMsg.textContent = t("Merci étudiant(e) {name} d'avoir voté !", {name: `${state.currentUser.prenom} ${state.currentUser.nom}`});
                         showView('studentVotedView');
                         if (state.electionStatus == 'closed'){
-                            secondParagraph.textContent = 'Vous pouvez à présent consulter les resultat des votes';
+                            secondParagraph.textContent = t('Vous pouvez à présent consulter les resultat des votes');
                         }
                         renderResults();
                         console.log("state.currentUser.has_voted")
@@ -2240,7 +2475,7 @@
         // =================================================================
 
         function renderStudentVoteView() {
-            studentWelcomeMsg.textContent = `Bienvenue, ${state.currentUser.prenom} ${state.currentUser.nom}`;
+            studentWelcomeMsg.textContent = t('Bienvenue, {name}', {name: `${state.currentUser.prenom} ${state.currentUser.nom}`});
             candidatesForVote.innerHTML = '';
             electionStatusMessage.innerHTML = '';
 
@@ -2248,14 +2483,14 @@
             selectedCandidateInfo.style.display = 'none';
             console.log('state.electionStatus ::::', state.electionStatus)
             if (state.electionStatus == 'pending') {
-                electionStatusMessage.innerHTML = '<div class="message message-warning">L\'élection n\'est pas encore ouverte.</div>';
+                electionStatusMessage.innerHTML = '<div class="message message-warning">' + t("L'élection n'est pas encore ouverte.") + '</div>';
                 return;
             }
             if (state.electionStatus == 'closed') {
-                electionStatusMessage.innerHTML = '<div class="message message-warning">L\'élection est terminée. Voici les résultats compilés: </div>';
+                electionStatusMessage.innerHTML = '<div class="message message-warning">' + t("L'élection est terminée. Voici les résultats compilés: ") + '</div>';
                 console.log('state.candidates.length ::::', state.candidates.length)
                 if (state.candidates.length === 0) {
-                    electionStatusMessage.innerHTML = '<div class="message message-info">Aucun candidat enregistré.</div>';
+                    electionStatusMessage.innerHTML = '<div class="message message-info">' + t("Aucun candidat enregistré.") + '</div>';
                     return;
                 }
     
@@ -2298,7 +2533,7 @@
             }
             
             if (state.candidates.length === 0) {
-                electionStatusMessage.innerHTML = '<div class="message message-info">Aucun candidat n\'est enregistré pour le moment.</div>';
+                electionStatusMessage.innerHTML = '<div class="message message-info">' + t("Aucun candidat n'est enregistré pour le moment.") + '</div>';
                 return;
             }
             
@@ -2316,7 +2551,7 @@
                 candidateDiv.innerHTML = `
                     ${bureauBadge}
                     <div class="selection-badge">
-                        <i class="fas fa-check"></i> Sélectionné
+                        <i class="fas fa-check"></i> ${t("Sélectionné")}
                     </div>
                     <a href="${candidate.photo_url}"><img src="${candidate.photo_url || 'https://api.dicebear.com/8.x/initials/svg?seed=' + encodeURIComponent(candidate.nom)}" 
                         crossorigin="anonymous"
@@ -2333,17 +2568,17 @@
                         </p>
                         <p>
                             <i class="fas fa-book"></i> 
-                            <strong>Spécialité:</strong> 
+                            <strong>${t("Spécialité:")}</strong> 
                             <span>${candidate.specialite_display}</span>
                         </p>
                         <p>
                             <i class="fas fa-layer-group"></i> 
-                            <strong>Niveau:</strong> 
+                            <strong>${t("Niveau:")}</strong> 
                             <span>${candidate.niveau}</span>
                         </p>
                         <p>
                             <i class="fas fa-building"></i> 
-                            <strong>Bureau:</strong> 
+                            <strong>${t("Bureau:")}</strong> 
                             <span>${bureauName}</span>
                         </p>
                     </div>
@@ -2355,7 +2590,7 @@
                     </div>
                     
                     <button class="vote-btn" data-candidate-id="${candidate.id}">
-                        <i class="fas fa-vote-yea"></i> Choisir ce candidat
+                        <i class="fas fa-vote-yea"></i> ${t("Choisir ce candidat")}
                     </button>
                 `;
                 candidatesForVote.appendChild(candidateDiv);
@@ -2390,11 +2625,11 @@
         // Confirmation du vote
         confirmVoteBtn.addEventListener('click', async () => {
             if (!selectedCandidateId) {
-                alert('Veuillez sélectionner un candidat avant de voter.');
+                alert(t('Veuillez sélectionner un candidat avant de voter.'));
                 return;
             }
         
-            if (confirm(`Êtes-vous sûr de vouloir voter pour ${selectedCandidateName.textContent} ?\n\nCette action est irréversible et vous ne pourrez plus modifier votre choix.`)) {
+            if (confirm(t(`Êtes-vous sûr de vouloir voter pour {name} ?\n\nCette action est irréversible et vous ne pourrez plus modifier votre choix.`, {name: selectedCandidateName.textContent}))) {
                 await castVote(selectedCandidateId);
             }
         });
@@ -2413,7 +2648,7 @@
                 });
                 await checkSession();
             } catch (error) {
-                alert(`Erreur lors du vote : ${error.message}`);
+                alert(t('Erreur lors du vote : {msg}', {msg: error.message}));
             } finally {
                 // Réactiver les boutons et cacher le loader
                 enableButtons([...voteButtons, confirmBtn]);
@@ -2462,7 +2697,7 @@
         function renderPendingUsers() {
             pendingUsersList.innerHTML = '';
             if (state.pendingUsers.length === 0) {
-                pendingUsersList.innerHTML = '<p>Aucun étudiant en attente de validation.</p>';
+                pendingUsersList.innerHTML = '<p>' + t("Aucun étudiant en attente de validation.") + '</p>';
                 return;
             }
 
@@ -2481,18 +2716,18 @@
                         <strong>${user.prenom} ${user.nom}</strong> (${user.matricule}) - ${user.telephone}<br>
                         <strong>${user.cycle}-${user.specialite} ${user.niveau} - ${user.campus}</strong><br>
                         <a href="${user.recu_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
-                            <i class="fas fa-file-invoice"></i> Voir le reçu
+                            <i class="fas fa-file-invoice"></i> ${t("Voir le reçu")}
                         </a>
                         ${user.verification_note ? `<div style="margin-top:6px; font-size:0.85em; color:#7a5b00; background:#fff8e1; border-left:3px solid #ffc107; padding:6px 8px; white-space:pre-line;">
-                            <strong><i class="fas fa-robot"></i> Contrôle automatique du reçu</strong><br>${escapeHtml(user.verification_note)}</div>` : ''}
+                            <strong><i class="fas fa-robot"></i> ${t("Contrôle automatique du reçu")}</strong><br>${escapeHtml(user.verification_note)}</div>` : ''}
                     </div>
                 </div>
                 <div style="display: flex; gap: 10px;">
                     <button class="btn btn-success" data-user-id="${user.id}">
-                        <i class="fas fa-check"></i> Valider
+                        <i class="fas fa-check"></i> ${t("Valider")}
                     </button>
                     <button class="btn btn-danger" data-user-id="${user.id}">
-                        <i class="fas fa-times"></i> Supprimer
+                        <i class="fas fa-times"></i> ${t("Supprimer")}
                     </button>
                 </div>
             `;
@@ -2513,13 +2748,13 @@
                         body: JSON.stringify({ status: 'validated' })
                     });
                 } else if (e.target.classList.contains('btn-danger')) {
-                    if (confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) {
+                    if (confirm(t("Êtes-vous sûr de vouloir supprimer cet utilisateur ?"))) {
                         await apiFetch(`/api/users/${userId}/`, { method: 'DELETE' });
                     }
                 }
                 await checkSession();
             } catch (error) {
-                alert(`Erreur : ${error.message}`);
+                alert(t('Erreur : {msg}', {msg: error.message}));
             }
         });
         usersList.addEventListener('click', async (e) => {
@@ -2529,20 +2764,20 @@
 
             try {
                 if (e.target.classList.contains('btn-danger')) {
-                    if (confirm("Êtes-vous sûr de vouloir desactiver cet étudiant ?")) {
+                    if (confirm(t("Êtes-vous sûr de vouloir desactiver cet étudiant ?"))) {
                         await apiFetch(`/api/users/${userId}/`, {
                             method: 'PUT',
                             body: JSON.stringify({ status: 'pending' })
                         });
                     }
                 } else if (e.target.classList.contains('btn-danger')) {
-                    if (confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) {
+                    if (confirm(t("Êtes-vous sûr de vouloir supprimer cet utilisateur ?"))) {
                         await apiFetch(`/api/users/${userId}/`, { method: 'DELETE' });
                     }
                 }
                 await checkSession();
             } catch (error) {
-                alert(`Erreur : ${error.message}`);
+                alert(t('Erreur : {msg}', {msg: error.message}));
             }
         });
         
@@ -2554,17 +2789,17 @@
             const campusSelect = document.getElementById('candidateCampus');
             
             // Vider les options actuelles
-            specialiteSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre spécialité</option>';
-            niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
-            campusSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre campus</option>';
+            specialiteSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez votre spécialité") + '</option>';
+            niveauSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez votre niveau") + '</option>';
+            campusSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez votre campus") + '</option>';
             specialiteSelect.disabled = true;
             niveauSelect.disabled = true;
             campusSelect.disabled = true;
 
             if (!cycle) {
-                specialiteSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord le cycle</option>';
-                niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord le cycle</option>';
-                campusSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord le cycle</option>';
+                specialiteSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez d'abord le cycle") + '</option>';
+                niveauSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez d'abord le cycle") + '</option>';
+                campusSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez d'abord le cycle") + '</option>';
                 return;
             }
             
@@ -2574,11 +2809,11 @@
                 const data = await response.json();
                 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Erreur de chargement');
+                    throw new Error(data.error || t('Erreur de chargement'));
                 }
                 
                 // Mettre à jour les spécialités
-                specialiteSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre spécialité</option>';
+                specialiteSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez votre spécialité") + '</option>';
                 data.specialites.forEach(specialite => {
                     const option = document.createElement('option');
                     option.value = specialite[0];  // La valeur (ex: 'informatique_bts')
@@ -2592,7 +2827,7 @@
                     if(cycle == 'licence'){
                         niveauSelect.innerHTML = '<option value="3">3</option>';
                     }else{
-                        niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
+                        niveauSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez votre niveau") + '</option>';
                         data.niveaux.forEach(niveau => {
                             const option = document.createElement('option');
                             option.value = niveau; 
@@ -2602,7 +2837,7 @@
                     }
                     niveauSelect.disabled = false;
                     campusSelect.innerHTML = `
-                        <option value="" disabled selected>Sélectionnez votre campus</option>
+                        <option value="" disabled selected>${t("Sélectionnez votre campus")}</option>
                         <option value="Bonamoussadi A">Bonamoussadi A</option>
                         <option value="Bonaberi">Bonaberi</option>
                     `;
@@ -2618,25 +2853,25 @@
                     
             } catch (error) {
                 console.error('Erreur:', error);
-                specialiteSelect.innerHTML = '<option value="" disabled selected>Erreur de chargement</option>';
-                niveauSelect.innerHTML = '<option value="" disabled selected>Erreur de chargement</option>';
+                specialiteSelect.innerHTML = '<option value="" disabled selected>' + t("Erreur de chargement") + '</option>';
+                niveauSelect.innerHTML = '<option value="" disabled selected>' + t("Erreur de chargement") + '</option>';
             }
         }
         function updateNiveauCandidatesBySpecialityIng(speciality) {
             const niveauSelect = document.getElementById('candidateNiveau');
             let niveauxList  = [];
             // Vider les options actuelles
-            niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
+            niveauSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez votre niveau") + '</option>';
             niveauSelect.disabled = true;
 
             if (!speciality) {
-                niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez d\'abord la specialité</option>';
+                niveauSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez d'abord la specialité") + '</option>';
                 return;
             }
             if (speciality == 'Prépa') { niveauxList  = [1, 2] }
             else { niveauxList  = [3, 4, 5] }
             // Mettre à jour les spécialités
-            niveauSelect.innerHTML = '<option value="" disabled selected>Sélectionnez votre niveau</option>';
+            niveauSelect.innerHTML = '<option value="" disabled selected>' + t("Sélectionnez votre niveau") + '</option>';
             niveauxList.forEach(niveau => {
                 const option = document.createElement('option');
                 option.value = niveau;  // La valeur (ex: 'informatique_bts')
@@ -2659,7 +2894,7 @@
         addCandidateForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (state.electionStatus === 'active') {
-                alert("Vous ne pouvez pas ajouter un candidat pendant une élection active.");
+                alert(t("Vous ne pouvez pas ajouter un candidat pendant une élection active."));
                 return;
             }
             // Désactiver le bouton d'ajout de candidat
@@ -2682,7 +2917,7 @@
             console.log("bureau : ", NomBureau)
 
             if (!nom || !prenom || !cycle || !specialite || !niveau || !campus || !slogan || !NomBureau || !couleur) {
-                alert('Veuillez remplir tous les champs obligatoires.');
+                alert(t('Veuillez remplir tous les champs obligatoires.'));
                 return;
             }
 
@@ -2712,7 +2947,7 @@
                 document.getElementById('candidateCouleurText').textContent = '#3498db';
                 await checkSession();
             } catch (error) {
-                alert(`Erreur : ${error.message}`);
+                alert(t('Erreur : {msg}', {msg: error.message}));
             }finally {
                 // Réactiver le bouton et cacher le loader
                 enableButtons([submitBtn]);
@@ -2723,7 +2958,7 @@
         function renderCandidatesList() {
             candidatesList.innerHTML = '';
             if (state.candidates.length === 0) {
-                candidatesList.innerHTML = '<p>Aucun candidat enregistré.</p>';
+                candidatesList.innerHTML = '<p>' + t("Aucun candidat enregistré.") + '</p>';
                 return;
             }
             state.candidates.forEach(candidate => {
@@ -2752,12 +2987,12 @@
                             <span style="color: var(--success-color); font-weight: bold;">
                                 ${candidate.votes} vote(s) <span style="color: #000000;"> | </span>  
                                 <a href="${candidate.programme_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
-                                    <i class="fas fa-file-invoice"></i> Voir le programme de campagne
+                                    <i class="fas fa-file-invoice"></i> ${t("Voir le programme de campagne")}
                                 </a>
                             </span>
                         </div>
                     </div>
-                    <button class="btn btn-danger" data-candidate-id="${candidate.id}">Supprimer</button>
+                    <button class="btn btn-danger" data-candidate-id="${candidate.id}">${t("Supprimer")}</button>
                 `;
                 candidatesList.appendChild(candidateDiv);
             });
@@ -2765,16 +3000,16 @@
         candidatesList.addEventListener('click', async (e) => {
              if (e.target.tagName !== 'BUTTON' || !e.target.dataset.candidateId) return;
              if (state.electionStatus === 'active') {
-                 alert("Vous ne pouvez pas supprimer un candidat pendant une élection active.");
+                 alert(t("Vous ne pouvez pas supprimer un candidat pendant une élection active."));
                  return;
              }
-             if (confirm("Êtes-vous sûr de vouloir supprimer ce candidat ?")) {
+             if (confirm(t("Êtes-vous sûr de vouloir supprimer ce candidat ?"))) {
                 try {
                     showLoader('deleteCandidat');
                     await apiFetch(`/api/candidates/${e.target.dataset.candidateId}/`, { method: 'DELETE' });
                     await checkSession();
                 } catch (error) {
-                    alert(`Erreur : ${error.message}`);
+                    alert(t('Erreur : {msg}', {msg: error.message}));
                 }finally {
                     hideLoader('deleteCandidat');
                 }
@@ -2784,9 +3019,9 @@
         // 
         function renderElectionStatus() {
             const statusText = { 
-                pending: "🟡 En attente", 
+                pending: t("🟡 En attente"), 
                 active: "🟢 Active", 
-                closed: "🔴 Terminée" 
+                closed: t("🔴 Terminée") 
             };
             electionStatusAdmin.textContent = statusText[state.electionStatus];
             
@@ -2817,39 +3052,39 @@
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-number">${totalVotes}</div>
-                        <div class="stat-label">Votes totaux</div>
+                        <div class="stat-label">${t("Votes totaux")}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-number">${totalUsers}</div>
-                        <div class="stat-label">Électeurs inscrits</div>
+                        <div class="stat-label">${t("Électeurs inscrits")}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-number">${participationRate}%</div>
-                        <div class="stat-label">Taux de participation</div>
+                        <div class="stat-label">${t("Taux de participation")}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-number">${state.candidates.length}</div>
-                        <div class="stat-label">Candidats</div>
+                        <div class="stat-label">${t("Candidats")}</div>
                     </div>
                 </div>
                 
                 <div class="warning-message">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <strong>Attention :</strong> La réinitialisation effacera tous les votes et remettra l'élection à zéro.
+                    <strong>${t("Attention :")}</strong> ${t("La réinitialisation effacera tous les votes et remettra l'élection à zéro.")}
                 </div>
             `;
         }
 
         // Gestionnaire pour le bouton de réinitialisation
         resetElectionBtn.addEventListener('click', async () => {
-            if (!confirm(`🚨 ACTION IRRÉVERSIBLE 🚨\n\nÊtes-vous ABSOLUMENT sûr de vouloir réinitialiser l'élection ?\n\nCette action va :\n• Remettre tous les compteurs de votes à zéro\n• Réinitialiser le statut "a voté" pour tous les utilisateurs\n• Remettre l'élection en statut "En attente"\n\nCette action ne peut pas être annulée !`)) {
+            if (!confirm(t(`🚨 ACTION IRRÉVERSIBLE 🚨\n\nÊtes-vous ABSOLUMENT sûr de vouloir réinitialiser l'élection ?\n\nCette action va :\n• Remettre tous les compteurs de votes à zéro\n• Réinitialiser le statut "a voté" pour tous les utilisateurs\n• Remettre l'élection en statut "En attente"\n\nCette action ne peut pas être annulée !`))) {
                 return;
             }
             
             // Demander une confirmation supplémentaire
-            const confirmation = prompt(`Pour confirmer la réinitialisation, tapez "RESET" ci-dessous :`);
+            const confirmation = prompt(t(`Pour confirmer la réinitialisation, tapez "RESET" ci-dessous :`));
             if (confirmation !== 'RESET') {
-                alert('Réinitialisation annulée. Le texte de confirmation ne correspond pas.');
+                alert(t('Réinitialisation annulée. Le texte de confirmation ne correspond pas.'));
                 return;
             }
             
@@ -2859,32 +3094,32 @@
                     body: JSON.stringify({ confirm: true })
                 });
                 await checkSession();
-                alert('✅ Élection réinitialisée avec succès !');
+                alert(t('✅ Élection réinitialisée avec succès !'));
             } catch (error) {
-                alert(`❌ Erreur lors de la réinitialisation : ${error.message}`);
+                alert(t('❌ Erreur lors de la réinitialisation : {msg}', {msg: error.message}));
             }
         });
         
         // Mettez à jour les autres gestionnaires pour qu'ils utilisent flex
         startElectionBtn.addEventListener('click', () => {
             if (state.candidates.length < 2) {
-                alert("Il doit y avoir au moins deux candidats pour démarrer l'élection.");
+                alert(t("Il doit y avoir au moins deux candidats pour démarrer l'élection."));
                 return;
             }
             
-            if (confirm("Êtes-vous sûr de vouloir démarrer l'élection ?\n\nLes étudiants pourront commencer à voter.")) {
+            if (confirm(t("Êtes-vous sûr de vouloir démarrer l'élection ?\n\nLes étudiants pourront commencer à voter."))) {
                 updateElectionStatus('active');
             }
         });
 
         stopElectionBtn.addEventListener('click', () => {
-            if (confirm("Êtes-vous sûr de vouloir terminer l'élection ?\n\nAucun vote ne pourra plus être effectué.")) {
+            if (confirm(t("Êtes-vous sûr de vouloir terminer l'élection ?\n\nAucun vote ne pourra plus être effectué."))) {
                 updateElectionStatus('closed');
             }
         });
         
         async function updateElectionStatus(newStatus) {
-            if (!confirm(`Êtes-vous sûr de vouloir ${newStatus === 'active' ? 'démarrer' : 'terminer'} l'élection ?`)) return;
+            if (!confirm((newStatus === 'active' ? t("Êtes-vous sûr de vouloir démarrer l'élection ?") : t("Êtes-vous sûr de vouloir terminer l'élection ?")))) return;
             try {
                 await apiFetch('/api/election/', {
                     method: 'PUT',
@@ -2892,13 +3127,13 @@
                 });
                 await checkSession();
             } catch (error) {
-                alert(`Erreur : ${error.message}`);
+                alert(t('Erreur : {msg}', {msg: error.message}));
             }
         }
 
         startElectionBtn.addEventListener('click', () => {
             if (state.candidates.length < 2) {
-                alert("Il doit y avoir au moins deux candidats pour démarrer l'élection.");
+                alert(t("Il doit y avoir au moins deux candidats pour démarrer l'élection."));
                 return;
             }
             updateElectionStatus('active');
@@ -2918,21 +3153,21 @@
             console.log("state.electionStatus :",state.electionStatus, " viewId : ", viewId);
             if (state.electionStatus === 'pending') {
                 console.log("state.electionStatus === 'pending'", viewId);
-                resultsContainer.innerHTML = '<div class="message message-info">L\'élection n\'a pas encore commencé.</div>';
+                resultsContainer.innerHTML = '<div class="message message-info">' + t("L'élection n'a pas encore commencé.") + '</div>';
                 resultsContainerEtudiant.innerHTML = resultsContainer.innerHTML;
                 return;
             }
 
             console.log("viewId !=  'adminDashboardView' : ", viewId !=  'adminDashboardView');
             if (state.electionStatus === 'active' && viewId != 'adminDashboardView') {
-                resultsContainerEtudiant.innerHTML = '<div class="message message-info">L\'élection est encore en cours...</div>';
+                resultsContainerEtudiant.innerHTML = '<div class="message message-info">' + t("L'élection est encore en cours...") + '</div>';
                 console.log("state.electionStatus === 'active' && viewId != 'adminDashboardView", viewId);
                 //return;
             }
             
             console.log("state.candidates.length : ", state.candidates.length);
             if (state.candidates.length === 0) {
-                resultsContainer.innerHTML = '<div class="message message-info">Aucun candidat enregistré.</div>';
+                resultsContainer.innerHTML = '<div class="message message-info">' + t("Aucun candidat enregistré.") + '</div>';
                 resultsContainerEtudiant.innerHTML = resultsContainer.innerHTML;
                 return;
             }
@@ -3047,13 +3282,13 @@
             usersList.innerHTML = '';
             if (state.allUsers.length === 0) {
                 usersCount.textContent = '';
-                usersList.innerHTML = '<p>Aucun étudiant enregistré.</p>';
+                usersList.innerHTML = '<p>' + t("Aucun étudiant enregistré.") + '</p>';
                 return;
             }
         
             refreshSpecialiteOptions();
             const users = getFilteredUsers();
-            usersCount.textContent = `${users.length} étudiant(s) affiché(s) sur ${state.allUsers.length}`;
+            usersCount.textContent = t('{n} étudiant(s) affiché(s) sur {m}', {n: users.length, m: state.allUsers.length});
         
             // Totaux globaux (inchangés)
             const totalInscrits = users.filter(u => u.status === 'validated').length;
@@ -3062,14 +3297,14 @@
             const countDiv = document.createElement('div');
             countDiv.className = 'list-item';
             countDiv.innerHTML = `
-                <div><h4>Total des inscrits : ${totalInscrits}</h4></div>
-                <div><h4>Total en attente : ${state.pendingUsers.length}</h4></div>
-                <div><h4>Total des votes : ${totalVotes}</h4></div>
+                <div><h4>${t('Total des inscrits : {n}', {n: totalInscrits})}</h4></div>
+                <div><h4>${t('Total en attente : {n}', {n: state.pendingUsers.length})}</h4></div>
+                <div><h4>${t('Total des votes : {n}', {n: totalVotes})}</h4></div>
             `;
             usersList.appendChild(countDiv);
         
             if (users.length === 0) {
-                usersList.insertAdjacentHTML('beforeend', '<p>Aucun étudiant ne correspond à cette recherche.</p>');
+                usersList.insertAdjacentHTML('beforeend', '<p>' + t("Aucun étudiant ne correspond à cette recherche.") + '</p>');
                 return;
             }
 
@@ -3088,8 +3323,8 @@
                         <div>
                             <strong>${user.prenom} ${user.nom}</strong> (${user.matricule}) - ${user.telephone}<br>
                             <strong>${user.cycle_display} - ${user.specialite} ${user.niveau} - ${user.campus}</strong><br>
-                            <span class="status-${user.status}">${user.status === 'pending' ? 'En attente' : 'Validée'}</span>
-                            ${user.status === 'pending' ? ' - ❌ Ne peut pas voter': user.has_voted ? ' - ✅ A voté' : ' - ❌ N\'a pas voté'}
+                            <span class="status-${user.status}">${user.status === 'pending' ? t('En attente') : t('Validée')}</span>
+                            ${user.status === 'pending' ? t(' - ❌ Ne peut pas voter'): user.has_voted ? t(' - ✅ A voté') : t(' - ❌ N\'a pas voté')}
                         </div>
                     </div>
                     
@@ -3097,7 +3332,7 @@
                 if(user.status === 'validated' ){
                     userDiv.innerHTML += `
                         <button class="btn btn-danger" data-user-id="${user.id}">
-                            <i class="fas fa-times"></i> Désactiver
+                            <i class="fas fa-times"></i> ${t("Désactiver")}
                         </button>
                     `;
                 }
@@ -3124,7 +3359,8 @@
             
             isTutorialOpen = true;
             
-            const tutorialVideoUrl = "https://res.cloudinary.com/dhwc5ibmo/video/upload/v1764067314/Tuto_inscription_a_AESP_VOTING_SYSTEM_tr45pj.mp4";
+            //const tutorialVideoUrl = "https://res.cloudinary.com/dhwc5ibmo/video/upload/v1764067314/Tuto_inscription_a_AESP_VOTING_SYSTEM_tr45pj.mp4";
+            const tutorialVideoUrl = "https://res.cloudinary.com/dhwc5ibmo/video/upload/v1793314576/Chappell_Roan_-_Good_Luck_Babe_Official_Lyric_Video_utleyc.mp4";
             
             tutorialModal = document.createElement('div');
             tutorialModal.id = 'tutorialModal';
@@ -3197,7 +3433,7 @@
                         border-radius: 25px;
                         backdrop-filter: blur(10px);
                     ">
-                        <i class="fas fa-graduation-cap"></i> Tutoriel d'utilisation
+                        <i class="fas fa-graduation-cap"></i> ${t("Tutoriel d'utilisation")}
                     </div>
                     
                     <!-- Vidéo en plein écran -->
@@ -3222,7 +3458,7 @@
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                             allowfullscreen
                             frameborder="0"
-                            title="Tutoriel de la plateforme de vote">
+                            title="${t('Tutoriel de la plateforme de vote')}">
                         </iframe>
                     </div>
                     
@@ -3242,7 +3478,7 @@
                         backdrop-filter: blur(10px);
                     ">
                         <i class="fas fa-info-circle" style="color: #E87722;"></i> 
-                        Appuyez sur Échap ou cliquez sur <i class="fas fa-times"></i> pour fermer
+                        ${t("Appuyez sur Échap ou cliquez sur")} <i class="fas fa-times"></i> ${t("pour fermer")}
                     </div>
                 </div>
             `;
