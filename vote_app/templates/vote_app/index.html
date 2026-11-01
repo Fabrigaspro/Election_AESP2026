@@ -1703,10 +1703,25 @@
         function hideConfirmation(type) {
             if (type === 'success') {
                 document.getElementById('successConfirmation').style.display = 'none';
+                goToLoginAfterRegister();
             } else if (type === 'error') {
-                console.log("offffffff")
                 document.getElementById('errorConfirmation').style.display = 'none';
             }
+        }
+
+        // Après l'inscription : affiche le formulaire de connexion (même effet que le lien « Se connecter »)
+        // et pré-remplit le matricule pour que l'étudiant n'ait plus qu'à saisir son mot de passe.
+        function goToLoginAfterRegister() {
+            const link = document.getElementById('showLogin');
+            if (link) link.click();
+            const mat = document.getElementById('loginMatricule');
+            if (mat && window.__lastRegisteredMatricule) {
+                mat.value = window.__lastRegisteredMatricule;
+                const pwd = document.getElementById('loginPassword');
+                if (pwd) pwd.focus();
+            }
+            window.__lastRegisteredMatricule = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     document.addEventListener('DOMContentLoaded', () => {
         showLoader('pageLoadLoader');
@@ -2089,6 +2104,7 @@
         function hideConfirmation(type) {
             if (type === 'success') {
                 document.getElementById('successConfirmation').style.display = 'none';
+                goToLoginAfterRegister();
             } else if (type === 'error') {
                 document.getElementById('errorConfirmation').style.display = 'none';
             }
@@ -2341,6 +2357,7 @@
                     method: 'POST', 
                     body: formData 
                 });
+                window.__lastRegisteredMatricule = document.getElementById('registerMatricule').value.trim();
                 showConfirmation('success', data.message, data.reasons);
                 registerForm.reset();
                 photoPreview.style.display = 'none';
