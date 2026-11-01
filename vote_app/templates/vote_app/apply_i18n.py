@@ -61,8 +61,7 @@ EN = {
     "Confirmer le mot de passe": "Confirm password",
     "Photo de profil": "Profile photo",
     "Photo du reçu IUGET": "IUGET receipt photo",
-    "Photo nette et entière du reçu. Votre matricule, votre nom, votre cycle, votre niveau et votre campus doivent y être lisibles et identiques à ce que vous avez saisi : ils sont vérifiés automatiquement pour valider votre compte.":
-        "A sharp, complete photo of the receipt. Your student ID, name, cycle, level and campus must be readable on it and identical to what you entered: they are checked automatically to approve your account.",
+    "Photo nette et entière du reçu. Votre matricule, nom, école, cycle, niveau et campus doivent y être lisibles et identiques à ce que vous avez saisi : ils sont vérifiés automatiquement pour valider votre compte. Assurez-vois d'avoir une connexion stable et actuliser la page en cas d'erreur de communication avec le serveur.": "A clear, full photo of the receipt. Your student ID, name, school, cycle, level and campus must be legible and identical to what you entered: they are checked automatically to validate your account. Make sure you have a stable connection, and refresh the page if there is a communication error with the server.",
     "Déjà un compte ?": "Already have an account?",
     # ---- Espace étudiant ----
     "Bienvenue !": "Welcome!",
