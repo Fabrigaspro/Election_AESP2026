@@ -1524,7 +1524,7 @@
   "Confirmer le mot de passe": "Confirm password",
   "Photo de profil": "Profile photo",
   "Photo du reçu IUGET": "IUGET receipt photo",
-  "Photo nette et entière du reçu. Votre matricule, nom, école, cycle, niveau et campus doivent y être lisibles et identiques à ce que vous avez saisi : ils sont vérifiés automatiquement pour valider votre compte. Assurez-vous d'avoir une connexion stable et actualisez  la page en cas d'erreur de communication avec le serveur.": "A clear, full photo of the receipt. Your student ID, name, school, cycle, level and campus must be legible and identical to what you entered: they are checked automatically to validate your account. Make sure you have a stable connection, and refresh the page if there is a communication error with the server.",
+  "Photo nette et entière du reçu. Votre matricule, nom, école, cycle, niveau et campus doivent y être lisibles et identiques à ce que vous avez saisi : ils sont vérifiés automatiquement pour valider votre compte. Assurez-vous d'avoir une connexion stable et actualisez la page en cas d'erreur de communication avec le serveur.": "A clear, full photo of the receipt. Your student ID, name, school, cycle, level and campus must be legible and identical to what you entered: they are checked automatically to validate your account. Make sure you have a stable connection, and refresh the page if there is a communication error with the server.",
   "Déjà un compte ?": "Already have an account?",
   "Bienvenue !": "Welcome!",
   "Votre inscription est en attente de validation par un administrateur.": "Your registration is awaiting validation by an administrator.",
@@ -1639,6 +1639,12 @@
   "Réinitialisation annulée. Le texte de confirmation ne correspond pas.": "Reset cancelled. The confirmation text does not match.",
   "✅ Élection réinitialisée avec succès !": "✅ Election reset successfully!"
 };
+  // Le texte du HTML est comparé avec espaces/retours à la ligne réduits à un seul espace :
+  // on ajoute donc au dictionnaire une version « normalisée » de chaque clé qui en a besoin.
+  Object.keys(EN).forEach(function (k) {
+    var n = k.replace(/\s+/g, ' ').trim();
+    if (n !== k && !Object.prototype.hasOwnProperty.call(EN, n)) EN[n] = EN[k];
+  });
   var stored = null;
   try { stored = localStorage.getItem('lang'); } catch (e) {}
   var lang = (stored === 'en' || stored === 'fr') ? stored : 'fr';
