@@ -142,6 +142,7 @@ EN = {
     "Choisir ce candidat": "Choose this candidate",
     "Voir le reçu": "View receipt",
     "Contrôle automatique du reçu": "Automatic receipt check",
+    "Connectez vous et personnalisez votre mot de passe !!!": "Sign in and set your own password!",
     "Valider": "Approve",
     "Supprimer": "Delete",
     "Désactiver": "Deactivate",
