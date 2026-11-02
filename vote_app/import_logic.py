@@ -102,6 +102,11 @@ def generer_mot_de_passe(nom, prenom, longueur=None):
         mdp = "".join(secrets.choice("ABCDEFGHJKMNPQRSTUVWXYZ23456789") for _ in range(8))
 
     return mdp
+
+def generer_mot_de_passe2(longueur=8):
+    """Mot de passe lisible (sans 0/O, 1/I/L) : 32^8, soit plus de mille milliards de possibilités."""
+    alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+    return "".join(secrets.choice(alphabet) for _ in range(longueur))
 # --------------------------------------------------------------------------------------
 # Lecture du fichier (CSV, ou Excel .xls / .xlsx si pandas est installé)
 # --------------------------------------------------------------------------------------

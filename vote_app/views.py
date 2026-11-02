@@ -77,6 +77,37 @@ def get_cycle_options(request):
             'niveaux345': [3, 4, 5]
         })
 
+def _default_password_candidates(user):
+    """Mots de passe par défaut possibles pour ce compte.
+
+    Règle : 2 premières lettres de chaque mot du nom, puis de chaque mot du prénom,
+    en MAJUSCULES, sans accent ni espace (KAMGA TCHOUA / MARIE LAURE -> KATCMALA).
+    On teste les deux ordres (first_name/last_name) car l'import et l'inscription
+    ne rangent pas forcément nom et prénom dans le même champ.
+    """
+    def words_variants(text):
+        norm = unicodedata.normalize('NFKD', text or '')
+        norm = ''.join(c for c in norm if not unicodedata.combining(c)).upper()
+        by_space = [re.sub(r'[^A-Z0-9]', '', w) for w in norm.split()]
+        by_punct = re.split(r'[^A-Z0-9]+', norm)
+        return [[w for w in v if w] for v in (by_space, by_punct)]
+
+    def initials(words):
+        return ''.join(w[:2] for w in words)
+
+    found = set()
+    for a, b in ((user.first_name, user.last_name), (user.last_name, user.first_name)):
+        for wa in words_variants(a):
+            for wb in words_variants(b):
+                code = initials(wa) + initials(wb)
+                if code:
+                    found.add(code)
+    return found
+
+def _is_default_password(user, password):
+    return password in _default_password_candidates(user)
+
+
 # Vue pour servir la page HTML principale
 def index(request):
     return render(request, 'vote_app/index.html')
@@ -423,54 +454,35 @@ def logout_view(request):
         })
 
 @csrf_exempt
-@login_required  # Changement de mot de passe : l'ancien mot de passe est obligatoire
+@login_required  # Changer son mot de passe (ancien mot de passe obligatoire)
 def change_password_view(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
 
     try:
         data = json.loads(request.body)
-    except (ValueError, TypeError):
+    except (TypeError, ValueError):
         return JsonResponse({'error': 'Requête invalide.'}, status=400)
 
     old_password = data.get('old_password') or ''
     new_password = data.get('new_password') or ''
-    confirm_password = data.get('confirm_password')
-
-    if not old_password or not new_password:
-        return JsonResponse({'error': 'Ancien et nouveau mot de passe obligatoires.'}, status=400)
-
-    if _change_password_rate_limited(request):
-        return JsonResponse({'error': 'Trop de tentatives. Réessayez dans quelques minutes.'}, status=429)
-
     user = request.user
+
     if not user.check_password(old_password):
-        return JsonResponse({'error': 'L\'ancien mot de passe est incorrect.'}, status=400)
-
-    if confirm_password is not None and new_password != confirm_password:
-        return JsonResponse({'error': 'Les mots de passe ne correspondent pas.'}, status=400)
-
-    if new_password == old_password:
-        return JsonResponse({'error': 'Le nouveau mot de passe doit être différent de l\'ancien.'}, status=400)
-
+        return JsonResponse({'error': 'Ancien mot de passe incorrect.'}, status=400)
     if len(new_password) < 6:
         return JsonResponse({'error': 'Le nouveau mot de passe doit contenir au moins 6 caractères.'}, status=400)
-
-    if is_default_password(user, new_password):
-        return JsonResponse({'error': 'Choisissez un mot de passe différent du mot de passe par défaut.'}, status=400)
-
-    # Règles de sécurité Django configurées dans settings (si AUTH_PASSWORD_VALIDATORS est défini)
-    try:
-        validate_password(new_password, user)
-    except ValidationError as e:
-        return JsonResponse({'error': ' '.join(e.messages)}, status=400)
+    if new_password == old_password:
+        return JsonResponse({'error': 'Le nouveau mot de passe doit être différent de l\'ancien.'}, status=400)
+    if _is_default_password(user, new_password):
+        return JsonResponse({'error': 'Choisissez un mot de passe différent de celui attribué par défaut.'}, status=400)
 
     user.set_password(new_password)
     user.save(update_fields=['password'])
-    update_session_auth_hash(request, user)   # garde la session ouverte après le changement
-    cache.delete(f'chgpwd_attempts:{user.id}')
+    update_session_auth_hash(request, user)   # garde l'utilisateur connecté
 
-    return JsonResponse({'success': True, 'message': 'Mot de passe modifié avec succès.'})
+    return JsonResponse({'success': 'Mot de passe modifié avec succès.'})
+
 
 
 @login_required
