@@ -1,0 +1,31 @@
+# Fichiers de cache Python
+__pycache__/
+*.pyc
+
+# Fichiers de base de données
+*.sqlite3
+db.sqlite3
+
+# Environnement virtuel
+# Remplacez 'venv' par le nom de votre environnement si différent (ex: env, .venv)
+venv/
+env/
+.venv/
+static/
+
+# Fichiers liés à l'IDE (ex: VSCode, PyCharm)
+.vscode/
+.idea/
+
+# Fichiers de dépendances (on utilise requirements.txt pour les lister)
+*.egg-info/
+dist/
+build/
+
+# Fichiers de logs
+*.log
+
+# Fichiers de secrets ou de configuration locale
+# Ne jamais versionner votre SECRET_KEY en production !
+.env
+*.local

@@ -41,16 +41,17 @@ class Profile(models.Model):
         ('ECOM', 'E-Commerce et Marketing Numérique'),
         ('ET', 'Électrotechnique'),
         ('GL', 'Génie Logiciel'),
-        ('GTO', 'Géomètre Topographe'),
+        ('GSI', "Gestion des Systemes d'Informations"),
+        ('TOPO', 'Géomètre Topographe'),
         ('IWD', 'Infographie et Web Design'),
         ('IIA', 'Informatique Industrielle et Automatisme'),
         ('IP', 'Ingénierie Pétrolière'),
-        ('MECATRO', 'Mécatronique'),
         ('MGA', 'Mines et Géologie Appliquée'),
-        ('RES', 'Réseau et Sécurité'),
-        ('TELECOM', 'Télécommunications'),
-        ('TP', 'Travaux Publics'),
+        ('RS', 'Réseau et Sécurité'),
+        ('TEL', 'Télécommunications'),
+        ('TPU', 'Travaux Publics'),
         ('URBA', 'Urbanisme'),
+        ('MCA', 'Mécatronique'),
         
     ]
 
@@ -92,6 +93,8 @@ class Profile(models.Model):
         ('SWE', 'Software Engineering'),
         ('EEE', 'Electrical and Electronic Engineering'),
         ('CE', 'Civil Engineering'),
+        ('CGDM', 'CGDM'),
+        ('IT&CS', 'IT&CS'),
     ]
 
     SPECIALITE_INGENIEUR = [
@@ -112,9 +115,10 @@ class Profile(models.Model):
     specialite = models.CharField(max_length=100, blank=True, null=True)
     niveau = models.IntegerField(blank=True)
     telephone = models.CharField(max_length=15, blank=True)
-    photo = CloudinaryField('image', folder='photos/')
-    recu = CloudinaryField('image', folder='recus/')
-    
+
+    photo = CloudinaryField('image', folder='photos/', blank=True, null=True)
+    recu = CloudinaryField('image', folder='recus/', blank=True, null=True)
+
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     has_voted = models.BooleanField(default=False)
