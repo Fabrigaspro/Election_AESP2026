@@ -1024,6 +1024,13 @@
         .lang-switch button.active { background: var(--primary-color, #1f2a48); color: #fff; border-color: var(--primary-color, #1f2a48); }
             .candidates-grid.readonly .candidate-card:hover { transform: none; box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
             /* --- Message d'information de la page de connexion --- */
+        /* Fenêtre « changer mon mot de passe » */
+        .pwd-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 10000; padding: 16px; }
+        .pwd-modal { background: #fff; border-radius: 12px; padding: 24px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .pwd-modal h3 { margin: 0 0 8px; color: var(--primary-color); }
+        .pwd-modal .pwd-intro { margin: 0 0 16px; font-size: 0.92rem; color: #555; line-height: 1.4; }
+        .pwd-modal .pwd-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+        .pwd-modal .pwd-actions .btn { flex: 1; min-width: 140px; }
         .login-info { display: block; text-align: left; font-size: 0.9rem; line-height: 1.45; margin: 0 0 1.2rem; }
         .login-info p { margin: 6px 0 0; }
         .login-info-title { font-weight: 700; font-size: 1rem; }
@@ -1052,6 +1059,42 @@
         <div class="loader-container">
             <div class="loader-spinner"></div>
             <p class="loader-text">Connexion en cours...</p>
+        </div>
+    </div>
+
+    <!-- Fenêtre : changer le mot de passe par défaut -->
+    <div id="changePasswordModal" class="pwd-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="changePwdTitle">
+        <div class="pwd-modal">
+            <h3 id="changePwdTitle"><i class="fas fa-key"></i> Changer mon mot de passe</h3>
+            <p class="pwd-intro" id="changePwdIntro">Vous vous êtes connecté avec le mot de passe par défaut. Pour protéger votre compte, choisissez votre propre mot de passe.</p>
+            <form id="changePasswordForm" autocomplete="off">
+                <div id="changePwdMessage" class="message message-error" style="display: none;"></div>
+                <div class="form-group">
+                    <label for="oldPassword">Ancien mot de passe</label>
+                    <div class="password-input-container" style="position: relative;">
+                        <input type="password" id="oldPassword" required autocomplete="current-password">
+                        <i class="fas fa-eye password-toggle" data-target="oldPassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #666;"></i>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">Nouveau mot de passe</label>
+                    <div class="password-input-container" style="position: relative;">
+                        <input type="password" id="newPassword" required minlength="6" autocomplete="new-password">
+                        <i class="fas fa-eye password-toggle" data-target="newPassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #666;"></i>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="confirmNewPassword">Confirmer le nouveau mot de passe</label>
+                    <div class="password-input-container" style="position: relative;">
+                        <input type="password" id="confirmNewPassword" required minlength="6" autocomplete="new-password">
+                        <i class="fas fa-eye password-toggle" data-target="confirmNewPassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #666;"></i>
+                    </div>
+                </div>
+                <div class="pwd-actions">
+                    <button type="submit" id="changePwdSubmit" class="btn btn-primary">Modifier le mot de passe</button>
+                    <button type="button" id="changePwdLater" class="btn">Plus tard</button>
+                </div>
+            </form>
         </div>
     </div>
     
@@ -1598,6 +1641,19 @@
   "Erreur lors du vote : {msg}": "Error while voting: {msg}",
   "❌ Erreur lors de la réinitialisation : {msg}": "❌ Error while resetting: {msg}",
   "Les mots de passe ne correspondent pas.": "Passwords do not match.",
+  "Changer mon mot de passe": "Change my password",
+  "Vous vous êtes connecté avec le mot de passe par défaut. Pour protéger votre compte, choisissez votre propre mot de passe.": "You signed in with the default password. To protect your account, choose your own password.",
+  "Ancien mot de passe": "Current password",
+  "Nouveau mot de passe": "New password",
+  "Confirmer le nouveau mot de passe": "Confirm new password",
+  "Modifier le mot de passe": "Update password",
+  "Plus tard": "Later",
+  "Mot de passe modifié avec succès.": "Password updated successfully.",
+  "Le nouveau mot de passe doit être différent de l'ancien.": "The new password must be different from the current one.",
+  "Le nouveau mot de passe doit contenir au moins 6 caractères.": "The new password must be at least 6 characters long.",
+  "L'ancien mot de passe est incorrect.": "The current password is incorrect.",
+  "Choisissez un mot de passe différent du mot de passe par défaut.": "Choose a password different from the default one.",
+  "Trop de tentatives. Réessayez dans quelques minutes.": "Too many attempts. Please try again in a few minutes.",
   "L'élection n'est pas encore ouverte.": "The election is not open yet.",
   "L'élection est terminée. Voici les résultats compilés: ": "The election is over. Here are the compiled results: ",
   "Aucun candidat enregistré.": "No candidate registered.",
@@ -2416,14 +2472,87 @@
                 loginForm.reset();
                 studentWelcomeMsg.textContent = t('Bienvenue, {name}', {name: `${state.currentUser.prenom} ${state.currentUser.nom}`});
                 
-                checkSession();
                 resetPasswordToggles();
+                if (user.using_default_password) {
+                    // Connecté avec le mot de passe par défaut : on propose d'en choisir un nouveau
+                    openChangePasswordModal(password);
+                } else {
+                    checkSession();
+                }
             } catch (error) {
                 displayMessage(loginError, error.message);
             } finally {
                 // Réactiver le bouton et cacher le loader
                 enableButtons([submitBtn]);
                 hideLoader('loginLoader');
+            }
+        });
+
+        // =================================================================
+        // CHANGEMENT DU MOT DE PASSE PAR DÉFAUT
+        // =================================================================
+        const changePasswordModal = document.getElementById('changePasswordModal');
+        const changePasswordForm = document.getElementById('changePasswordForm');
+        const changePwdMessage = document.getElementById('changePwdMessage');
+        const changePwdSubmit = document.getElementById('changePwdSubmit');
+        const changePwdLater = document.getElementById('changePwdLater');
+
+        function openChangePasswordModal(prefillOld) {
+            changePasswordForm.reset();
+            hideMessage(changePwdMessage);
+            // L'étudiant vient de saisir son mot de passe par défaut : on le pré-remplit,
+            // mais il reste modifiable et le serveur le revérifie.
+            document.getElementById('oldPassword').value = prefillOld || '';
+            changePasswordModal.style.display = 'flex';
+            document.getElementById('newPassword').focus();
+        }
+
+        function closeChangePasswordModal() {
+            changePasswordModal.style.display = 'none';
+            changePasswordForm.reset();
+            resetPasswordToggles();
+            checkSession();   // poursuit vers le tableau de bord
+        }
+
+        changePwdLater.addEventListener('click', closeChangePasswordModal);
+
+        changePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessage(changePwdMessage);
+
+            const old_password = document.getElementById('oldPassword').value;
+            const new_password = document.getElementById('newPassword').value;
+            const confirm_password = document.getElementById('confirmNewPassword').value;
+
+            if (new_password !== confirm_password) {
+                displayMessage(changePwdMessage, t('Les mots de passe ne correspondent pas.'));
+                return;
+            }
+            if (new_password.length < 6) {
+                displayMessage(changePwdMessage, t('Le nouveau mot de passe doit contenir au moins 6 caractères.'));
+                return;
+            }
+            if (new_password === old_password) {
+                displayMessage(changePwdMessage, t('Le nouveau mot de passe doit être différent de l\'ancien.'));
+                return;
+            }
+
+            disableButtons([changePwdSubmit, changePwdLater]);
+            try {
+                await apiFetch('/api/change_password/', {
+                    method: 'POST',
+                    body: JSON.stringify({ old_password, new_password, confirm_password })
+                });
+                displayMessage(changePwdMessage, t('Mot de passe modifié avec succès.'), 'success');
+                changePasswordForm.querySelectorAll('input').forEach(i => i.disabled = true);
+                setTimeout(() => {
+                    changePasswordForm.querySelectorAll('input').forEach(i => i.disabled = false);
+                    closeChangePasswordModal();
+                }, 1500);
+            } catch (error) {
+                displayMessage(changePwdMessage, error.message);
+            } finally {
+                enableButtons([changePwdSubmit, changePwdLater]);
             }
         });
 

@@ -18,6 +18,11 @@ from datetime import timedelta
 from django.db import transaction, IntegrityError
 from django.core.cache import cache
 from . import receipt_verifier
+import re
+import unicodedata
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 # Méthodes utilitaires pour les choix dynamiques
 def get_specialites_by_cycle(cycle):
@@ -147,6 +152,39 @@ def validate_image_upload(file_obj, allowed_exts=None, max_size_mb=10):
         return False, 'Nom de fichier sans extension.'
 
     return True, None
+
+
+# ===============================================
+# MOT DE PASSE PAR DÉFAUT / CHANGEMENT DE MOT DE PASSE
+# ===============================================
+
+def _default_password_part(text):
+    """2 premières lettres de chaque mot, en MAJUSCULES, sans accent ni espace."""
+    text = unicodedata.normalize('NFD', text or '')
+    text = ''.join(c for c in text if unicodedata.category(c) != 'Mn')
+    words = re.findall(r'[A-Za-z]+', text)
+    return ''.join(w[:2] for w in words).upper()
+
+
+def default_password_candidates(user):
+    """Mots de passe par défaut possibles d'un compte (nom+prénom ou prénom+nom,
+    car l'ordre dépend de la façon dont le compte a été créé)."""
+    a = _default_password_part(user.first_name)
+    b = _default_password_part(user.last_name)
+    return {a + b, b + a} - {''}
+
+
+def is_default_password(user, raw_password):
+    """True si le mot de passe saisi est le mot de passe par défaut du compte."""
+    return bool(raw_password) and raw_password in default_password_candidates(user)
+
+
+def _change_password_rate_limited(request):
+    """Limite les essais d'ancien mot de passe (par utilisateur, 10 par 15 min)."""
+    key = f'chgpwd_attempts:{request.user.id}'
+    attempts = cache.get(key, 0) + 1
+    cache.set(key, attempts, 900)
+    return attempts > 10
 
 # ===============================================
 # VUES API  electionStatusMessage
@@ -343,7 +381,9 @@ def login_view(request):
                     return JsonResponse({
                         'success': True,
                         'user': user_to_dict(user),
-                        'message': 'Connexion réussie'
+                        'message': 'Connexion réussie',
+                        # Permet au site de proposer de changer le mot de passe par défaut
+                        'using_default_password': (not profile.is_admin) and is_default_password(user, password),
                     })
                 except Exception as e:
                     print("ereur de la sortie JsonResponse : ", e)
@@ -381,6 +421,57 @@ def logout_view(request):
             'success': True,
             'message': 'Déconnexion réussie'
         })
+
+@csrf_exempt
+@login_required  # Changement de mot de passe : l'ancien mot de passe est obligatoire
+def change_password_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Requête invalide.'}, status=400)
+
+    old_password = data.get('old_password') or ''
+    new_password = data.get('new_password') or ''
+    confirm_password = data.get('confirm_password')
+
+    if not old_password or not new_password:
+        return JsonResponse({'error': 'Ancien et nouveau mot de passe obligatoires.'}, status=400)
+
+    if _change_password_rate_limited(request):
+        return JsonResponse({'error': 'Trop de tentatives. Réessayez dans quelques minutes.'}, status=429)
+
+    user = request.user
+    if not user.check_password(old_password):
+        return JsonResponse({'error': 'L\'ancien mot de passe est incorrect.'}, status=400)
+
+    if confirm_password is not None and new_password != confirm_password:
+        return JsonResponse({'error': 'Les mots de passe ne correspondent pas.'}, status=400)
+
+    if new_password == old_password:
+        return JsonResponse({'error': 'Le nouveau mot de passe doit être différent de l\'ancien.'}, status=400)
+
+    if len(new_password) < 6:
+        return JsonResponse({'error': 'Le nouveau mot de passe doit contenir au moins 6 caractères.'}, status=400)
+
+    if is_default_password(user, new_password):
+        return JsonResponse({'error': 'Choisissez un mot de passe différent du mot de passe par défaut.'}, status=400)
+
+    # Règles de sécurité Django configurées dans settings (si AUTH_PASSWORD_VALIDATORS est défini)
+    try:
+        validate_password(new_password, user)
+    except ValidationError as e:
+        return JsonResponse({'error': ' '.join(e.messages)}, status=400)
+
+    user.set_password(new_password)
+    user.save(update_fields=['password'])
+    update_session_auth_hash(request, user)   # garde la session ouverte après le changement
+    cache.delete(f'chgpwd_attempts:{user.id}')
+
+    return JsonResponse({'success': True, 'message': 'Mot de passe modifié avec succès.'})
+
 
 @login_required
 def check_session_view(request):
