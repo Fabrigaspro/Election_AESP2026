@@ -510,7 +510,7 @@ def dashboard_data_view(request):
             'niveau': candidate.niveau,
             'campus': candidate.campus,
             'slogan': candidate.slogan,
-            'votes': candidate.votes if (election.status == 'closed' or is_user_admin(request.user)) else 0,
+            'votes': candidate.votes if (is_user_admin(request.user) or (election.status == 'closed' and election.results_visible)) else 0,
             'bureau_color': candidate.bureau_color,
             'bureau_name': candidate.bureau_name,
             'photo_url': candidate.photo_url.url if candidate.photo_url else None,  # Convertir Cloudinary en URL string
@@ -533,6 +533,7 @@ def dashboard_data_view(request):
     return JsonResponse({
         'user': user_to_dict(request.user),
         'election_status': election.status,
+        'results_visible': election.results_visible,   # résultats publiés aux étudiants ?
         'candidates': candidates,
         'pending_users': pending_users,
         'all_users': all_users,
@@ -685,12 +686,21 @@ def manage_election_view(request):
     
     if request.method == 'PUT':
         data = json.loads(request.body)
-        new_status = data.get('status')
         election = ElectionState.load()
+
+        # Montrer / cacher les résultats aux étudiants (sans toucher au statut de l'élection)
+        if 'results_visible' in data:
+            election.results_visible = bool(data.get('results_visible'))
+            election.save(update_fields=['results_visible'])
+            return JsonResponse({'status': election.status, 'results_visible': election.results_visible})
+
+        new_status = data.get('status')
         if new_status in ['pending', 'active', 'closed']:
             election.status = new_status
+            if new_status != 'closed':
+                election.results_visible = False      # on repart masqué à chaque nouvelle élection
             election.save()
-            return JsonResponse({'status': election.status})
+            return JsonResponse({'status': election.status, 'results_visible': election.results_visible})
         return JsonResponse({'error': 'Statut invalide.'}, status=400)
         
     return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
@@ -714,6 +724,7 @@ def reset_election_view(request):
             # Remettre l'élection en statut "pending"
             election = ElectionState.objects.first()
             election.status = 'pending'
+            election.results_visible = False
             election.save()
             
             return JsonResponse({'success': 'Élection réinitialisée avec succès'})

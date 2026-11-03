@@ -539,7 +539,8 @@ class ElectionState(models.Model):
         ('closed', 'Terminée'),
     ]
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
-
+    results_visible = models.BooleanField(default=False)
+    
     # Assurer qu'il n'y a qu'une seule instance de ce modèle
     def save(self, *args, **kwargs):
         self.pk = 1
