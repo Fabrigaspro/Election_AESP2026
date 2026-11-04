@@ -46,7 +46,7 @@ def main(path):
                     : t("Choisissez votre candidat préféré en cliquant sur sa carte. Vous ne pourrez voter qu'une seule fois !");
             }
             if (state.electionStatus == 'pending') {
-                electionStatusMessage.innerHTML = '<div class="message message-warning">' + t("L'élection n'est pas encore ouverte. Le vote sera possible dès son ouverture.") + '</div>';
+                electionStatusMessage.innerHTML = '<div class="message message-warning">' + t("L'élection n'est pas encore ouverte. Le vote sera possible du 08/11/26 à 10h au 09/11/26 à 14h.") + '</div>';
                 // pas de return : les candidats restent visibles, sans bouton de vote
             }
 """,
@@ -80,7 +80,7 @@ def main(path):
     new_keys = (
         '  "Découvrez les candidats ci-dessous. Le vote sera possible dès l\'ouverture de l\'élection.": '
         '"Discover the candidates below. Voting will be possible as soon as the election opens.",\n'
-        '  "L\'élection n\'est pas encore ouverte. Le vote sera possible dès son ouverture.": '
+        '  "L\'élection n\'est pas encore ouverte. Le vote sera possible du 08/11/26 à 10h au 09/11/26 à 14h.": '
         '"The election is not open yet. Voting will be possible as soon as it opens.",\n'
     )
     html, n = re.subn(r"(var EN = \{\n)", lambda m: m.group(1) + new_keys, html, count=1)

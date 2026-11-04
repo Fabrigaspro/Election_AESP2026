@@ -2693,7 +2693,7 @@
                     : t("Choisissez votre candidat préféré en cliquant sur sa carte. Vous ne pourrez voter qu'une seule fois !");
             }
             if (state.electionStatus == 'pending') {
-                electionStatusMessage.innerHTML = '<div class="message message-warning">' + t("L'élection n'est pas encore ouverte. Le vote sera possible dès son ouverture.") + '</div>';
+                electionStatusMessage.innerHTML = '<div class="message message-warning">' + t("L'élection n'est pas encore ouverte. Le vote sera possible du 08/11/26 à 10h au 09/11/26 à 14h.") + '</div>';
                 // pas de return : les candidats restent visibles, sans bouton de vote
             }
             if (state.electionStatus == 'closed' && !state.resultsVisible) {
