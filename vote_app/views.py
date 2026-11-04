@@ -143,6 +143,8 @@ def user_to_dict(user):
         'verification_source': user.profile.verification_source,
         'verification_score': user.profile.verification_score,
         'verification_note': user.profile.verification_note,
+        'has_logged_in': user.last_login is not None,   # s'est déjà connecté au moins une fois
+        'last_login': user.last_login.isoformat() if user.last_login else None,
     }
 
 

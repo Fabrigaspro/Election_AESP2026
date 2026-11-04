@@ -309,6 +309,13 @@ class Profile(models.Model):
 
     def get_fullname(self):
         return f'{self.user.first_name} {self.user.last_name}'
+
+    @property
+    def has_logged_in(self):
+        """True si l'utilisateur s'est connecté au moins une fois à l'application.
+        Django renseigne user.last_login à chaque login() : aucune migration nécessaire,
+        et cela vaut aussi pour les connexions déjà faites avant l'ajout de cet indicateur."""
+        return self.user.last_login is not None
     
     def get_cycle_display(self):
         for code, name in self.CYCLE_CHOICES:

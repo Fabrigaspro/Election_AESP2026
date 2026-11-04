@@ -356,6 +356,10 @@
             margin-bottom: 10px;
         }
         .users-header h3 { margin: 0; }
+        .login-badge { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 10px; font-size: 0.82em; }
+        .login-yes { background: #e3f6e8; color: #1b6b32; }
+        .login-no { background: #eceff3; color: #5b6572; }
+
         #userSearch {
             flex: 1;
             min-width: 220px;
@@ -1533,6 +1537,11 @@
                         <option value="voted">✅ A voté</option>
                         <option value="not_voted">❌ N'a pas voté</option>
                     </select>
+                    <select id="userFilterLogin">
+                        <option value="">Connexion : tous</option>
+                        <option value="logged">🟢 S'est déjà connecté</option>
+                        <option value="never">⚪ Jamais connecté</option>
+                    </select>
                     <button id="userFilterReset" class="btn" type="button">Réinitialiser</button>
                 </div>
                 <h4>Liste des Étudiants inscrits à l'AESP</h4>
@@ -1552,6 +1561,12 @@
 /* === Bilingue FR/EN : dictionnaire, t(), traduction du HTML statique, sélecteur === */
 (function () {
   var EN = {
+  "Connexion : tous": "Login: all",
+  "🟢 S'est déjà connecté": "🟢 Has logged in",
+  "⚪ Jamais connecté": "⚪ Never logged in",
+  "Déjà connectés : {n}": "Already logged in: {n}",
+  "S'est déjà connecté": "Has already logged in",
+  "Jamais connecté": "Never logged in",
   "Résultats visibles par les étudiants": "Results visible to students",
   "Résultats masqués aux étudiants": "Results hidden from students",
   "Les étudiants ne les verront qu'une fois l'élection terminée.": "Students will only see them once the election is over.",
@@ -1866,6 +1881,7 @@
         const userFilterCycle = document.getElementById('userFilterCycle');
         const userFilterSpecialite = document.getElementById('userFilterSpecialite');
         const userFilterVote = document.getElementById('userFilterVote');
+        const userFilterLogin = document.getElementById('userFilterLogin');
         const userFilterReset = document.getElementById('userFilterReset');
         const usersCount = document.getElementById('usersCount');
         const photoPreview = document.getElementById('photoPreview');
@@ -3514,6 +3530,7 @@
             const cycle = userFilterCycle.value;
             const spec = userFilterSpecialite.value;
             const vote = userFilterVote.value;
+            const login = userFilterLogin.value;
         
             return state.allUsers.filter(u => {
                 const haystack = normalizeText(`${u.prenom} ${u.nom} ${u.matricule}`);
@@ -3523,6 +3540,8 @@
                 if (vote === 'voted' && !u.has_voted) return false;
                 // "N'a pas voté" = inscrit validé qui n'a pas encore voté (les comptes en attente ne peuvent pas voter)
                 if (vote === 'not_voted' && !(u.status === 'validated' && !u.has_voted)) return false;
+                if (login === 'logged' && !u.has_logged_in) return false;
+                if (login === 'never' && u.has_logged_in) return false;
                 return true;
             });
         }
@@ -3535,10 +3554,12 @@
         userFilterCycle.addEventListener('change', renderUsersList);
         userFilterSpecialite.addEventListener('change', renderUsersList);
         userFilterVote.addEventListener('change', renderUsersList);
+        userFilterLogin.addEventListener('change', renderUsersList);
         userFilterReset.addEventListener('click', () => {
             userSearch.value = '';
             userFilterCycle.value = '';
             userFilterVote.value = '';
+            userFilterLogin.value = '';
             refreshSpecialiteOptions();
             renderUsersList();
         });
@@ -3558,6 +3579,7 @@
             // Totaux globaux (inchangés)
             const totalInscrits = users.filter(u => u.status === 'validated').length;
             const totalVotes = users.filter(u => u.has_voted).length;
+            const totalConnectes = users.filter(u => u.has_logged_in).length;
             
             const countDiv = document.createElement('div');
             countDiv.className = 'list-item';
@@ -3565,6 +3587,7 @@
                 <div><h4>${t('Total des inscrits : {n}', {n: totalInscrits})}</h4></div>
                 <div><h4>${t('Total en attente : {n}', {n: state.pendingUsers.length})}</h4></div>
                 <div><h4>${t('Total des votes : {n}', {n: totalVotes})}</h4></div>
+                <div><h4>${t('Déjà connectés : {n}', {n: totalConnectes})}</h4></div>
             `;
             usersList.appendChild(countDiv);
         
@@ -3589,7 +3612,10 @@
                             <strong>${user.prenom} ${user.nom}</strong> (${user.matricule}) - ${user.telephone}<br>
                             <strong>${user.cycle_display} - ${user.specialite} ${user.niveau} - ${user.campus}</strong><br>
                             <span class="status-${user.status}">${user.status === 'pending' ? t('En attente') : t('Validée')}</span>
-                            ${user.status === 'pending' ? t(' - ❌ Ne peut pas voter'): user.has_voted ? t(' - ✅ A voté') : t(' - ❌ N\'a pas voté')}
+                            ${user.status === 'pending' ? t(' - ❌ Ne peut pas voter'): user.has_voted ? t(' - ✅ A voté') : t(' - ❌ N\'a pas voté')}<br>
+                            ${user.has_logged_in
+                                ? '<span class="login-badge login-yes">🟢 ' + t('S\'est déjà connecté') + (user.last_login ? ' · ' + new Date(user.last_login).toLocaleString() : '') + '</span>'
+                                : '<span class="login-badge login-no">⚪ ' + t('Jamais connecté') + '</span>'}
                         </div>
                     </div>
                     
