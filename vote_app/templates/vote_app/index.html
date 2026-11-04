@@ -1561,6 +1561,7 @@
 /* === Bilingue FR/EN : dictionnaire, t(), traduction du HTML statique, sélecteur === */
 (function () {
   var EN = {
+  "Afficher plus ({n} restants)": "Show more ({n} remaining)",
   "Connexion : tous": "Login: all",
   "🟢 S'est déjà connecté": "🟢 Has logged in",
   "⚪ Jamais connecté": "⚪ Never logged in",
@@ -3514,6 +3515,9 @@
                     .filter(Boolean)
             )].sort();
         
+            const optionsKey = specs.join('|');
+            if (userFilterSpecialite.dataset.key === optionsKey) return;     // rien à changer
+            userFilterSpecialite.dataset.key = optionsKey;
             userFilterSpecialite.innerHTML = '<option value="">Toutes les spécialités</option>';
             specs.forEach(s => {
                 const opt = document.createElement('option');
@@ -3549,22 +3553,27 @@
         let userSearchTimer = null;
         userSearch.addEventListener('input', () => {
             clearTimeout(userSearchTimer);
-            userSearchTimer = setTimeout(renderUsersList, 200);   // évite de tout redessiner à chaque lettre
+            userSearchTimer = setTimeout(() => renderUsersList(true), 200);   // évite de tout redessiner à chaque lettre
         });
-        userFilterCycle.addEventListener('change', renderUsersList);
-        userFilterSpecialite.addEventListener('change', renderUsersList);
-        userFilterVote.addEventListener('change', renderUsersList);
-        userFilterLogin.addEventListener('change', renderUsersList);
+        userFilterCycle.addEventListener('change', () => renderUsersList(true));
+        userFilterSpecialite.addEventListener('change', () => renderUsersList(true));
+        userFilterVote.addEventListener('change', () => renderUsersList(true));
+        userFilterLogin.addEventListener('change', () => renderUsersList(true));
         userFilterReset.addEventListener('click', () => {
             userSearch.value = '';
             userFilterCycle.value = '';
             userFilterVote.value = '';
             userFilterLogin.value = '';
             refreshSpecialiteOptions();
-            renderUsersList();
+            renderUsersList(true);
         });
 
-        function renderUsersList() {
+        // Affichage par pages : dessiner ~1500 lignes avec photos à chaque filtre figeait la page
+        const USERS_PAGE = 50;
+        let usersShown = USERS_PAGE;
+
+        function renderUsersList(resetPage) {
+            if (resetPage === true) usersShown = USERS_PAGE;
             usersList.innerHTML = '';
             if (state.allUsers.length === 0) {
                 usersCount.textContent = '';
@@ -3596,15 +3605,15 @@
                 return;
             }
 
-            // Afficher la liste des Etudiants
-            users.forEach(user => {
+            // Afficher la liste des Etudiants (les premiers seulement, le reste via « Afficher plus »)
+            users.slice(0, usersShown).forEach(user => {
                 const userDiv = document.createElement('div');
                 userDiv.className = 'list-item';
                 userDiv.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 15px; flex-grow: 1;">
                         <a href="${user.photo_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
                             <img src="${user.photo_url || 'https://api.dicebear.com/8.x/initials/svg?seed=' + encodeURIComponent(user.prenom + ' ' + user.nom)}" 
-                            crossorigin="anonymous"
+                            crossorigin="anonymous" loading="lazy" decoding="async"
                             alt="Photo de ${user.prenom} ${user.nom}"
                              style="width: 80px; height: 80px; border-radius: 30%; object-fit: cover; border: 2px solid var(--primary-color);">
                         </a>
@@ -3629,6 +3638,19 @@
                 }
                 usersList.appendChild(userDiv);
             });
+
+            if (users.length > usersShown) {
+                const more = document.createElement('button');
+                more.type = 'button';
+                more.className = 'btn btn-primary';
+                more.style.cssText = 'display:block; margin:15px auto;';
+                more.textContent = t('Afficher plus ({n} restants)', {n: users.length - usersShown});
+                more.addEventListener('click', () => {
+                    usersShown += USERS_PAGE;
+                    renderUsersList();
+                });
+                usersList.appendChild(more);
+            }
         }
 
         // =================================================================
@@ -3841,7 +3863,7 @@
 
         // Vérifier si le clic est sur une icône password-toggle
         if (e.target.classList.contains('password-toggle') || 
-            e.target.parentElement.classList.contains('password-toggle')) {
+            (e.target.parentElement && e.target.parentElement.classList.contains('password-toggle'))) {
             
             const icon = e.target.classList.contains('password-toggle') ? 
                          e.target : e.target.parentElement;
