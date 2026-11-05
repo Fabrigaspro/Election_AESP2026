@@ -172,6 +172,8 @@ RECEIPT_REQUIRE_ECOLE = env.bool('RECEIPT_REQUIRE_YEAR', default=True)
 RECEIPT_STRICT_SPECIALITE = env.bool('RECEIPT_STRICT_SPECIALITE', default=False)  # True = une spécialité différente bloque la validation auto
 # Moteur de lecture du reçu : 'auto' (Claude -> OCR.space -> OCR local, selon les clés présentes), 'claude', 'ocrspace' ou 'ocr'
 RECEIPT_ENGINE = env('RECEIPT_ENGINE', default='auto')
+
+QR_LOGIN_ENABLED = TRUE
 # OCR.space (gratuit : ~25 000 requêtes/mois, images <= 1 Mo). Clé à mettre dans Railway : OCR_SPACE_API_KEY
 OCR_SPACE_API_KEY = env('OCR_SPACE_API_KEY', default='')
 OCR_SPACE_URL = env('OCR_SPACE_URL', default='https://api.ocr.space/parse/image')

@@ -14,6 +14,7 @@ urlpatterns = [
     path('api/logout/', views.logout_view, name='api_logout'),
     path('api/check_session/', views.check_session_view, name='api_check_session'),
     path('api/change_password/', views.change_password_view, name='change_password'),
+    path('api/login-qr/', views.login_qr_view, name='login_qr'),
 
     # API de données
     path('api/dashboard_data/', views.dashboard_data_view, name='api_dashboard_data'),

@@ -360,6 +360,12 @@
         .login-yes { background: #e3f6e8; color: #1b6b32; }
         .login-no { background: #eceff3; color: #5b6572; }
 
+        .qr-reader { width: 100%; min-height: 60px; margin-top: 10px; border-radius: 8px; overflow: hidden; }
+        .login-or { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: #777; font-size: 0.9em; }
+        .login-or::before, .login-or::after { content: ''; flex: 1; height: 1px; background: #d8dce3; }
+        .qr-login-btn { background: #fff; color: var(--primary-color); border: 2px solid var(--primary-color); margin-bottom: 12px; }
+        .qr-login-btn:hover { background: #eef1f8; }
+
         #userSearch {
             flex: 1;
             min-width: 220px;
@@ -1049,6 +1055,7 @@
         .login-info-example strong { letter-spacing: 1px; }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
 </head>
 <body>
     <!-- Loaders pour les différentes opérations -->
@@ -1143,6 +1150,19 @@
         </div>
 
         <!-- Fenêtre : changer son mot de passe -->
+        <div id="qrLoginOverlay" class="confirmation-overlay">
+            <div class="confirmation-box pwd-modal-box">
+                <div class="confirmation-title">📷 Connexion avec mon reçu</div>
+                <div class="message message-info" style="text-align:left;">Placez le QR code de votre reçu devant la caméra : la connexion se fait automatiquement.</div>
+                <div id="qrLoginMsg" class="message message-error" style="display:none; text-align:left;"></div>
+                <div id="qrReader" class="qr-reader"></div>
+                <div class="pwd-modal-actions" style="margin-top:14px;">
+                    <button type="button" id="qrRetry" class="btn btn-primary" style="display:none;"><i class="fas fa-redo"></i> <span>Réessayer</span></button>
+                    <button type="button" id="qrCancel" class="btn">Annuler</button>
+                </div>
+            </div>
+        </div>
+
         <div id="changePasswordOverlay" class="confirmation-overlay">
             <div class="confirmation-box pwd-modal-box">
                 <div class="confirmation-title">🔒 Changer mon mot de passe</div>
@@ -1210,6 +1230,8 @@
                     </div>
                     <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
                 </form>
+                <div class="login-or"><span>ou</span></div>
+                <button type="button" id="qrLoginBtn" class="btn btn-block qr-login-btn"><i class="fas fa-qrcode"></i> <span>Se connecter avec le QR code de mon reçu</span></button>
                 <p class="text-center">Pas encore de compte ? <span id="showRegister" class="toggle-link">S'inscrire</span></p>
             </div>
 
@@ -1561,6 +1583,27 @@
 /* === Bilingue FR/EN : dictionnaire, t(), traduction du HTML statique, sélecteur === */
 (function () {
   var EN = {
+  "Placez le QR code de votre reçu devant la caméra : la connexion se fait automatiquement.": "Hold the QR code of your receipt in front of the camera: you will be signed in automatically.",
+  "Réessayer": "Try again",
+  "QR code lu, vérification en cours...": "QR code read, checking...",
+  "QR code introuvable ou illisible. Réessayez en le cadrant bien.": "QR code not found or unreadable. Try again and frame it properly.",
+  "QR code manquant.": "QR code missing.",
+  "Requête invalide.": "Invalid request.",
+  "Ce reçu n'est pas celui de l'année académique 2026/2027.": "This receipt is not for the 2026/2027 academic year.",
+  "ou": "or",
+  "Se connecter avec le QR code de mon reçu": "Sign in with the QR code on my receipt",
+  "📷 Connexion avec mon reçu": "📷 Sign in with my receipt",
+  "Prenez en photo votre reçu AESP, ou choisissez une image de ce reçu. Le QR code doit être net, entier et bien éclairé. Votre matricule et l'année académique du scrutin seront vérifiés.": "Take a photo of your AESP receipt, or choose an image of it. The QR code must be sharp, complete and well lit. Your student ID and the academic year of the election will be checked.",
+  "Prendre une photo": "Take a photo",
+  "Choisir une image": "Choose an image",
+  "Lecture du QR code en cours...": "Reading the QR code...",
+  "QR code introuvable sur la photo. Reprenez la photo : le QR code doit être net, entier et bien éclairé.": "QR code not found in the photo. Please retake it: the QR code must be sharp, complete and well lit.",
+  "Ce QR code n'est pas celui d'un reçu AESP valide.": "This QR code is not from a valid AESP receipt.",
+  "Aucun compte n'est associé au matricule de ce reçu. Inscrivez-vous d'abord.": "No account is linked to the student ID on this receipt. Please register first.",
+  "Ce compte ne peut pas se connecter avec un reçu.": "This account cannot sign in with a receipt.",
+  "Photo du reçu manquante.": "Receipt photo missing.",
+  "La connexion par reçu est désactivée.": "Receipt sign-in is disabled.",
+  "Trop de tentatives. Réessayez dans quelques minutes.": "Too many attempts. Please try again in a few minutes.",
   "Afficher plus ({n} restants)": "Show more ({n} remaining)",
   "Connexion : tous": "Login: all",
   "🟢 S'est déjà connecté": "🟢 Has logged in",
@@ -2566,6 +2609,76 @@
                 enableButtons([btn]);
             }
         });
+
+        // ---- 2e mode de connexion : scan en direct du QR code du reçu ----
+        const qrLoginOverlay = document.getElementById('qrLoginOverlay');
+        const qrLoginMsg = document.getElementById('qrLoginMsg');
+        const qrRetry = document.getElementById('qrRetry');
+        let qrScanner = null;
+        let qrBusy = false;
+
+        async function stopQrScanner() {
+            if (!qrScanner) return;
+            const sc = qrScanner;
+            qrScanner = null;
+            try { await sc.stop(); } catch (e) {}
+            try { sc.clear(); } catch (e) {}
+        }
+
+        async function startQrScanner() {
+            hideMessage(qrLoginMsg);
+            qrRetry.style.display = 'none';
+            qrBusy = false;
+            if (typeof Html5Qrcode === 'undefined') {
+                displayMessage(qrLoginMsg, t("Le scanner n'a pas pu être chargé. Vérifiez votre connexion Internet puis réessayez."));
+                qrRetry.style.display = '';
+                return;
+            }
+            try {
+                qrScanner = new Html5Qrcode('qrReader', { formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE], verbose: false });
+                await qrScanner.start(
+                    { facingMode: 'environment' },
+                    { fps: 10, qrbox: (w, h) => { const side = Math.floor(Math.min(w, h) * 0.7); return { width: side, height: side }; } },
+                    onQrScanned,
+                    () => {}                       // image sans QR : on continue de chercher
+                );
+            } catch (err) {
+                await stopQrScanner();
+                displayMessage(qrLoginMsg, t("Impossible d'ouvrir la caméra. Autorisez l'accès à la caméra dans votre navigateur, puis réessayez."));
+                qrRetry.style.display = '';
+            }
+        }
+
+        async function onQrScanned(text) {
+            if (qrBusy) return;
+            qrBusy = true;                         // un seul envoi par scan
+            await stopQrScanner();
+            displayMessage(qrLoginMsg, t('QR code lu, vérification en cours...'), 'info');
+            try {
+                const user = await apiFetch('/api/login-qr/', { method: 'POST', body: JSON.stringify({ qr: text }) });
+                state.currentUser = user;
+                studentWelcomeMsg.textContent = t('Bienvenue, {name}', {name: `${state.currentUser.prenom} ${state.currentUser.nom}`});
+                closeQrLogin();
+                await checkSession();
+                resetPasswordToggles();
+            } catch (error) {
+                displayMessage(qrLoginMsg, t(error.message));
+                qrRetry.style.display = '';
+            }
+        }
+
+        function openQrLogin() {
+            qrLoginOverlay.style.display = 'flex';
+            startQrScanner();
+        }
+        async function closeQrLogin() {
+            qrLoginOverlay.style.display = 'none';
+            await stopQrScanner();
+        }
+
+        document.getElementById('qrLoginBtn').addEventListener('click', openQrLogin);
+        document.getElementById('qrCancel').addEventListener('click', closeQrLogin);
+        qrRetry.addEventListener('click', startQrScanner);
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();

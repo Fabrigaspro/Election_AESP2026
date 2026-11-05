@@ -372,6 +372,17 @@ def register_view(request):
         'reasons': verdict.failed_reasons(),
     })
 
+def _open_session(request, user, profile, method='password'):
+    """Ouvre la session Django de l'utilisateur (token de session, activité, login())."""
+    session_token = profile.generate_session_token()
+    request.session['session_token'] = session_token
+    request.session['user_id'] = user.id
+    request.session['login_method'] = method
+    profile.last_activity = timezone.now()
+    profile.save(update_fields=['last_activity'])
+    login(request, user)
+
+
 @csrf_exempt # Connection d'un utilisateur
 def login_view(request):
     print("Connexion en cours demarrée.......")
@@ -397,18 +408,7 @@ def login_view(request):
                         'error': 'Compte déjà connecté sur un autre appareil. Déconnectez-vous d\'abord ou attendez que la session expire.'
                     }, status=400)
                 
-                # Générer nouveau token
-                session_token = profile.generate_session_token()
-                # Stocker dans la session Django
-                request.session['session_token'] = session_token
-                request.session['user_id'] = user.id
-
-                # Mettre à jour l'activité
-                profile.last_activity = timezone.now()
-                profile.save(update_fields=['last_activity'])
-                
-                # Connecter l'utilisateur
-                login(request, user)
+                _open_session(request, user, profile)
 
                 try:
                     return JsonResponse({
@@ -433,6 +433,88 @@ def login_view(request):
             }, status=400)
     
     return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+
+# ===============================================
+# 2e MODE DE CONNEXION : QR CODE DU REÇU
+# ===============================================
+QR_SIGNATURE_RE = re.compile(r'^[0-9a-fA-F]{64}$')
+
+
+def _qr_login_rate_limited(request):
+    """Limite les essais de connexion par reçu : 15 par IP et par 15 minutes."""
+    key = f'qr_login_attempts:{_client_ip(request)}'
+    attempts = cache.get(key, 0) + 1
+    cache.set(key, attempts, 900)
+    return attempts > getattr(settings, 'QR_LOGIN_MAX_PER_IP', 15)
+
+
+@csrf_exempt  # Connexion avec le QR code du reçu : le texte du QR est lu par le téléphone (scan en direct)
+def login_qr_view(request):
+    """Reçoit le contenu du QR scanné ({"qr": "MATRICULE|AAAA/AAAA|signature"}) — ou, en secours,
+    une image du reçu (champ multipart « recu ») dont le QR est décodé côté serveur."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+    if not getattr(settings, 'QR_LOGIN_ENABLED', True):
+        return JsonResponse({'error': 'La connexion par reçu est désactivée.'}, status=403)
+    if _qr_login_rate_limited(request):
+        return JsonResponse({'error': 'Trop de tentatives. Réessayez dans quelques minutes.'}, status=429)
+
+    # 1) contenu du QR code
+    if request.content_type == 'application/json':
+        try:
+            qr_text = str(json.loads(request.body).get('qr') or '').strip()
+        except (TypeError, ValueError, AttributeError):
+            return JsonResponse({'error': 'Requête invalide.'}, status=400)
+        if len(qr_text) > 300:
+            return JsonResponse({'error': "Ce QR code n'est pas celui d'un reçu AESP valide."}, status=400)
+    else:
+        recu_file = request.FILES.get('recu')
+        if not recu_file:
+            return JsonResponse({'error': 'QR code manquant.'}, status=400)
+        ok, msg = validate_image_upload(recu_file)
+        if not ok:
+            return JsonResponse({'error': f'Reçu invalide: {msg}'}, status=400)
+        try:
+            jpeg_bytes, _ = receipt_verifier.prepare_image(recu_file)
+        except receipt_verifier.ReceiptImageError as e:
+            return JsonResponse({'error': f'Reçu invalide: {e}'}, status=400)
+        qr_text = receipt_verifier.decode_qr(jpeg_bytes) or ''
+
+    qr = receipt_verifier.parse_qr_payload(qr_text)
+    if not qr['qr_raw']:
+        return JsonResponse({'error': 'QR code introuvable ou illisible. Réessayez en le cadrant bien.'}, status=400)
+    matricule = ''.join((qr['qr_matricule'] or '').split()).upper()
+    if not matricule or not qr['qr_signature'] or not QR_SIGNATURE_RE.match(qr['qr_signature']):
+        return JsonResponse({'error': "Ce QR code n'est pas celui d'un reçu AESP valide."}, status=400)
+
+    # 2) année académique du scrutin
+    expected_year = receipt_verifier.normalize_year(getattr(settings, 'ACADEMIC_YEAR', ''))
+    if expected_year and qr['qr_annee_academique'] != expected_year:
+        return JsonResponse({'error': f"Ce reçu n'est pas celui de l'année académique {expected_year}."}, status=400)
+
+    # 3) le matricule doit correspondre à un compte existant (jamais un compte administrateur)
+    user = User.objects.filter(username__iexact=matricule).first()
+    if user is None:
+        return JsonResponse({'error': "Aucun compte n'est associé au matricule de ce reçu. "
+                                      "Inscrivez-vous d'abord."}, status=400)
+    profile, _ = Profile.objects.get_or_create(user=user)
+    if profile.is_admin or user.is_staff or user.is_superuser:
+        return JsonResponse({'error': 'Ce compte ne peut pas se connecter avec un reçu.'}, status=403)
+    if profile.has_active_session:
+        return JsonResponse({
+            'success': False,
+            'error': "Compte déjà connecté sur un autre appareil. Déconnectez-vous d'abord ou attendez que la session expire."
+        }, status=400)
+
+    # 4) connexion
+    user.backend = 'django.contrib.auth.backends.ModelBackend'
+    _open_session(request, user, profile, method='qr')
+    return JsonResponse({
+        'success': True,
+        'user': user_to_dict(user),
+        'message': 'Connexion réussie',
+        'login_method': 'qr',
+    })
 
 login_required # Deconnection d'un utilisateur
 def logout_view(request):
