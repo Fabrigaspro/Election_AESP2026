@@ -1533,7 +1533,7 @@
   "Confirmer mon vote": "Confirm my vote",
   "Votre vote a été enregistrée avec succès.": "Your vote has been recorded successfully.",
   "Les résultats seront annoncés à la fin de la période de vote.": "The results will be announced at the end of the voting period.",
-  "Vous pouvez à présent consulter les resultat des votes": "You can now view the voting results",
+  "Vous pouvez à présent consulter les resultats des votes": "You can now view the voting results",
   "Résultats de l'élection": "Election results",
   "Merci étudiant(e) {name} d'avoir voté !": "Thank you, {name}, for voting!",
   "Bienvenue, {name}": "Welcome, {name}",
@@ -1942,7 +1942,7 @@
                             secondParagraph.textContent = t('Les résultats seront annoncés à la fin de la période de vote.');
                         }
                         else if(state.electionStatus == 'closed'){ 
-                            secondParagraph.textContent = t('Vous pouvez à présent consulter les resultat des votes');
+                            secondParagraph.textContent = t('Vous pouvez à présent consulter les resultats des votes');
                         }
                     }
                     renderStudentVoteView();
@@ -2454,7 +2454,7 @@
                         studentWelcomeVotingMsg.textContent = t("Merci étudiant(e) {name} d'avoir voté !", {name: `${state.currentUser.prenom} ${state.currentUser.nom}`});
                         showView('studentVotedView');
                         if (state.electionStatus == 'closed'){
-                            secondParagraph.textContent = t('Vous pouvez à présent consulter les resultat des votes');
+                            secondParagraph.textContent = t('Vous pouvez à présent consulter les resultats des votes');
                         }
                         renderResults();
                         console.log("state.currentUser.has_voted")

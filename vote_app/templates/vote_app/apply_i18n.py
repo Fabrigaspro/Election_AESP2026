@@ -74,7 +74,7 @@ EN = {
     "Confirmer mon vote": "Confirm my vote",
     "Votre vote a été enregistrée avec succès.": "Your vote has been recorded successfully.",
     "Les résultats seront annoncés à la fin de la période de vote.": "The results will be announced at the end of the voting period.",
-    "Vous pouvez à présent consulter les resultat des votes": "You can now view the voting results",
+    "Vous pouvez à présent consulter les resultats des votes": "You can now view the voting results",
     "Résultats de l'élection": "Election results",
     "Merci étudiant(e) {name} d'avoir voté !": "Thank you, {name}, for voting!",
     "Bienvenue, {name}": "Welcome, {name}",
@@ -319,7 +319,7 @@ def transform_js(js):
 
     # -- chaînes JS simples -------------------------------------------------------------------
     for lit in ["'Les résultats seront annoncés à la fin de la période de vote.'",
-                "'Vous pouvez à présent consulter les resultat des votes'",
+                "'Vous pouvez à présent consulter les resultats des votes'",
                 "'✅ Données mises à jour'",
                 "'Erreur de communication avec le serveur.'",
                 "'Erreur de chargement'",

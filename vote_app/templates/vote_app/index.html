@@ -1694,7 +1694,7 @@
   "Confirmer mon vote": "Confirm my vote",
   "Votre vote a été enregistrée avec succès.": "Your vote has been recorded successfully.",
   "Les résultats seront annoncés à la fin de la période de vote.": "The results will be announced at the end of the voting period.",
-  "Vous pouvez à présent consulter les resultat des votes": "You can now view the voting results",
+  "Vous pouvez à présent consulter les resultats des votes": "You can now view the voting results",
   "Résultats de l'élection": "Election results",
   "Merci étudiant(e) {name} d'avoir voté !": "Thank you, {name}, for voting!",
   "Bienvenue, {name}": "Welcome, {name}",
@@ -2131,7 +2131,7 @@
                         }
                         else if(state.electionStatus == 'closed'){ 
                             secondParagraph.textContent = studentsCanSeeResults()
-                                ? t('Vous pouvez à présent consulter les resultat des votes')
+                                ? t('Vous pouvez à présent consulter les resultats des votes')
                                 : t("L'élection est terminée. Les résultats seront publiés prochainement par l'administration.");
                         }
                     }
@@ -2784,7 +2784,7 @@
                         showView('studentVotedView');
                         if (state.electionStatus == 'closed'){
                             secondParagraph.textContent = studentsCanSeeResults()
-                                ? t('Vous pouvez à présent consulter les resultat des votes')
+                                ? t('Vous pouvez à présent consulter les resultats des votes')
                                 : t("L'élection est terminée. Les résultats seront publiés prochainement par l'administration.");
                         }
                         renderResults();
