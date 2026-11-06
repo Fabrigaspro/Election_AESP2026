@@ -4,7 +4,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Élection du Gouverneur AESP - South Polytech</title>
     <style>
         /* --- Styles Généraux --- */
@@ -18,7 +18,6 @@
             --pending-color: #ffc107;
         }
 
-        @import url('https://fonts.googleapis.com/css?family=Poppins:400,500,600,700&display=swap');
         * {
             box-sizing: border-box;
             margin: 0;
@@ -848,197 +847,244 @@
         .message-info { background-color: #cce5ff; color: #004085; }
         .message-warning { background-color: #fff3cd; color: #856404; }
 
-        /* --- Responsive Design --- */
-        @media (max-width: 854px) {
-            .logo {
-                height: 54px;
-                width: auto;
-            }
+        /* ===================================================================
+           RESPONSIVE — tous les écrans (téléphones 320px → grands écrans)
+           Approche : fluide (clamp) + points de rupture 900 / 640 / 420 / 340
+           =================================================================== */
 
-            header h1 {
-                margin-bottom: 0.5rem;
-                font-size: 22px;
-                margin-bottom: 0;
-            }
-            header p {
-                margin-bottom: 0.5rem;
-                font-size: 10px;
-            }
-
+        /* --- Bases communes --- */
+        html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+        body {
+            overflow-x: hidden;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
         }
-        @media (max-width: 580px) {
-            .logo {
-                height: 50px;
-                width: auto;
-            }
+        img, video, iframe { max-width: 100%; }
+        button, input, select, textarea { font-family: inherit; }
+        .btn, .vote-btn, .confirmation-button, .lang-switch button {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .card, .list-item, .message, .candidate-card, .form-container { overflow-wrap: break-word; }
 
-            header h1 {
-                margin-bottom: 0.5rem;
-                font-size: 18px;
-                margin-bottom: 0;
+        /* --- En-tête fluide (remplace les 7 paliers manuels) --- */
+        header { border-width: clamp(2px, 0.6vw, 5px); }
+        .logo-container { flex-shrink: 0; }
+        .logo { height: clamp(32px, 11vw, 100px); }
+        header .container { flex: 1; min-width: 0; padding: 4px clamp(6px, 2vw, 20px); }
+        header h1 { font-size: clamp(0.8rem, 2.2vw + 0.35rem, 2rem); line-height: 1.2; }
+        header p  { font-size: clamp(0.62rem, 1.1vw + 0.3rem, 1rem); line-height: 1.25; margin: 2px 0 0; }
+        #authView .logo { height: clamp(56px, 18vw, 100px); }
+
+        /* --- Titres fluides --- */
+        h2 { font-size: clamp(1.2rem, 1rem + 1vw, 1.5rem); line-height: 1.25; }
+        .card h3, .vote-instructions h3 { font-size: clamp(1rem, 0.9rem + 0.6vw, 1.17rem); line-height: 1.3; }
+
+        /* --- Lignes de listes (admin / résultats) : classes remplaçant les styles inline --- */
+        .avatar {
+            width: 80px; height: 80px; border-radius: 30%; object-fit: cover;
+            border: 2px solid var(--primary-color); display: block;
+        }
+        .row-main { display: flex; align-items: center; gap: 15px; flex: 1; min-width: 0; }
+        .row-main > a { flex-shrink: 0; line-height: 0; }
+        .row-main > div { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+        .row-body { flex: 1; min-width: 0; }
+        .row-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .color-dot {
+            width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
+            border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .list-item { gap: 12px; }
+        .list-item > .btn, .row-actions .btn { flex-shrink: 0; }
+        .count-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.4rem 1rem; }
+        .count-row h4 { font-size: 1rem; }
+
+        /* --- Barres de résultats : le libellé est hors de la barre (toujours lisible) --- */
+        .result-label { font-weight: 600; font-size: 0.92rem; margin-top: 0.5rem; }
+        .result-bar-container { margin: 4px 0 12px; overflow: hidden; }
+        .result-bar { height: 16px; min-width: 2px; }
+
+        /* --- Grilles --- */
+        .candidates-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: clamp(1rem, 3vw, 2rem); }
+        .stats-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+        .candidate-card h4 { margin-bottom: 0.5rem; }
+        .candidate-card { min-width: 0; }
+        #selectedCandidateInfo .btn { margin-left: 1rem; }
+
+        /* --- Fenêtres modales : jamais plus hautes que l'écran, défilables --- */
+        .confirmation-overlay { padding: 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .confirmation-box { max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; }
+        .loader-container { max-width: 90vw; }
+        .qr-reader video, .qr-reader img { max-width: 100%; height: auto; }
+        #qrReader { max-width: 100%; }
+
+        /* --- Écrans tactiles : pas d'effets « hover » qui restent collés --- */
+        @media (hover: none) {
+            .candidate-card:hover { transform: none; box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+            .vote-btn:hover { transform: none; }
+            .tutorial-btn:hover { transform: none; }
+            .admin-nav .btn:not(.active):hover { transform: none; }
+        }
+
+        /* --- Tutoriel plein écran : hauteur réelle sur mobile (barre d'adresse) --- */
+        #tutorialModal { height: 100vh !important; height: 100dvh !important; }
+
+        /* ============ Tablettes et petits écrans (≤ 900px) ============ */
+        @media (max-width: 900px) {
+            main { padding: 1.5rem 0; }
+            .admin-nav .btn { flex: 1 1 calc(33.333% - 10px); }
+            .tutorial-btn { width: 180px; }
+        }
+
+        /* ============ Téléphones (≤ 640px) ============ */
+        @media (max-width: 640px) {
+            .container { padding: 0 12px; }
+            main { padding: 1rem 0; min-height: calc(100vh - 150px); }
+            footer { padding: 0.8rem; margin-top: 1rem; }
+            footer p { font-size: 12px; }
+
+            /* Cartes & formulaires */
+            .card { padding: 1rem; margin-bottom: 1rem; border-radius: 10px; }
+            .form-container { padding: 1.2rem 1rem; margin: 0.5rem auto; border-radius: 10px; }
+            .form-group { margin-bottom: 0.9rem; }
+            .form-group label { font-size: 0.95rem; }
+            /* 16px minimum : évite le zoom automatique d'iOS dans les champs */
+            .form-group input, .form-group select, #userSearch, .users-filters select {
+                font-size: 16px; min-height: 46px;
             }
-            header p {
-                margin-bottom: 0.5rem;
-                font-size: 10px;
-            }
+            .form-group input[type="file"] { font-size: 14px; }
+            .form-group input[type="color"] { min-height: 40px; }
+            .password-input-container input { padding-right: 48px !important; }
+            .password-toggle { padding: 12px 8px; font-size: 1.05rem; }
+            .candidate-form-grid { grid-template-columns: 1fr; gap: 0.9rem; }
+            .candidate-form-grid .form-group { margin-bottom: 0; }
+            .btn { padding: 0.8rem 1rem; min-height: 46px; }
+            .toggle-link { padding: 6px 0; }
+            .file-preview { max-width: 90px; max-height: 90px; }
+            .login-info { font-size: 0.88rem; }
+            .lang-switch { margin-top: 6px; }
+            .lang-switch button { padding: 6px 14px; }
+
+            /* En-têtes de tableaux de bord */
             .dashboard-header {
-                flex-direction: column;
-                gap: 1rem;
-                text-align: center;
+                flex-direction: column; align-items: stretch; gap: 0.8rem;
+                text-align: center; margin-bottom: 1rem;
             }
-            .list-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
+            .dashboard-header .header-actions { justify-content: center; }
+            .header-actions .btn { flex: 1 1 150px; }
+            #logoutBtnAdmin, #logoutBtnPending, #logoutBtnVoted { width: 100%; }
+            .vote-instructions { padding: 0.8rem; margin-bottom: 1rem; }
+            .vote-instructions p { font-size: 0.95rem; }
+
+            /* Navigation admin : grille 2 colonnes (au lieu de 5 boutons empilés) */
+            .admin-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.2rem; }
+            .admin-nav .btn {
+                padding: 0.6rem 0.4rem; font-size: 0.85rem; line-height: 1.25; min-height: 52px;
+                display: flex; align-items: center; justify-content: center; text-align: center;
             }
-            .list-item > div:last-child {
-                width: 100%;
-                margin-top: 0.5rem;
+            .admin-nav .btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
+            .admin-nav .btn.active::after { bottom: -4px; }
+
+            /* Listes admin : photo + texte, boutons pleine largeur dessous */
+            .list-item { flex-direction: column; align-items: stretch; gap: 0.7rem; padding: 0.8rem; }
+            .list-item > .btn { width: 100%; }
+            .row-main { align-items: flex-start; gap: 12px; }
+            .avatar { width: 60px; height: 60px; }
+            .row-main > div { font-size: 0.92rem; }
+            .row-actions { width: 100%; }
+            .row-actions .btn { flex: 1 1 0; padding: 0.7rem 0.4rem; font-size: 0.92rem; }
+            .count-row { grid-template-columns: 1fr 1fr; }
+            .count-row h4 { font-size: 0.9rem; }
+
+            /* Gestion des étudiants : recherche + filtres */
+            .users-header { flex-direction: column; align-items: stretch; gap: 10px; }
+            #userSearch { flex: none; min-width: 0; max-width: none; width: 100%; }
+            .users-filters { gap: 8px; }
+            .users-filters select { flex: 1 1 calc(50% - 8px); min-width: 0; }
+            .users-filters .btn { flex: 1 1 100%; }
+
+            /* Contrôle de l'élection, statistiques, résultats */
+            #electionControlButtons { flex-direction: column; }
+            #electionControlButtons .btn { width: 100%; justify-content: center; }
+            #electionStats { padding: 0.8rem !important; }
+            .stats-grid { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+            .stat-number { font-size: 1.6rem; }
+            .stat-label { font-size: 0.8rem; }
+            .results-visibility-bar { flex-direction: column; align-items: stretch; text-align: center; }
+            .results-visibility-bar .btn { width: 100%; }
+
+            /* Vote : cartes candidats pleine largeur */
+            .candidates-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .candidate-card { padding: 1rem; margin: 0; border-radius: 10px; }
+            .candidate-card img { width: 112px; height: 112px; margin-top: 38px; }
+            .candidate-card h4 { font-size: 1.1rem; }
+            .candidate-info { padding: 0.8rem; font-size: 0.88rem; }
+            .candidate-info p { flex-wrap: wrap; }
+            .slogan { padding: 0.6rem; font-size: 0.92rem; }
+            .vote-btn { padding: 14px 16px; font-size: 1rem; min-height: 48px; }
+            .bureau-badge { font-size: 0.65rem; padding: 5px 10px; }
+            #selectedCandidateInfo .btn { display: block; width: 100%; margin: 0.7rem 0 0; }
+
+            /* Modales */
+            .confirmation-box { padding: 20px 16px; width: 100%; border-radius: 12px; }
+            .confirmation-title { font-size: 20px; margin-bottom: 10px; }
+            .confirmation-message { font-size: 15px; margin-bottom: 14px; }
+            .confirmation-button { width: 100%; padding: 13px; }
+            .pwd-modal-actions { flex-direction: column-reverse; }
+            .pwd-modal-actions .btn { width: 100%; min-width: 0; }
+            .loader-container { padding: 1.5rem; }
+            .loader-spinner { width: 42px; height: 42px; }
+
+            /* Tutoriel vidéo plein écran */
+            #closeTutorialBtn {
+                top: calc(env(safe-area-inset-top, 0px) + 10px) !important; right: 10px !important;
+                width: 42px !important; height: 42px !important; font-size: 1.2rem !important;
             }
-            .list-item .btn {
-                width: 100%;
+            .tuto-title {
+                top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
+                max-width: calc(100vw - 130px); font-size: 0.9rem !important;
+                padding: 6px 12px !important; white-space: normal; line-height: 1.25;
             }
-            .admin-nav {
-                flex-direction: column;
+            .tuto-hint {
+                bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+                width: max-content; max-width: 92vw; font-size: 0.78rem !important;
+                padding: 6px 12px !important; line-height: 1.3;
             }
-            .candidates-grid {
-                grid-template-columns: 1fr;
-            }
-            .candidate-form-grid {
-                grid-template-columns: 1fr;
-            }
+            .tutorial-btn { width: 100%; max-width: 260px; }
+            .tutorial-tooltip { display: none; }
         }
-        @media (max-width: 492px) {
-            .logo {
-                height: 47px;
-                width: auto;
-            }
 
-            header h1 {
-                margin-bottom: 0.5rem;
-                font-size: 16px;
-                margin-bottom: 0;
-            }
-            header p {
-                margin-bottom: 0.5rem;
-                font-size: 10px;
-            }
-            
-            .candidates-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-            
-            .candidate-card {
-                padding: 1rem;
-                margin: 0 0.5rem;
-            }
-            
-            .candidate-card img {
-                width: 120px;
-                height: 120px;
-            }
-            
-            .candidate-card h4 {
-                font-size: 1.1rem;
-            }
-            
-            .candidate-info {
-                padding: 0.8rem;
-                font-size: 0.85rem;
-            }
-            
-            .candidate-info p {
-                flex-direction: column;
-                align-items: flex-start;
-                text-align: left;
-            }
-            
-            .candidate-info i {
-                margin-bottom: 0.2rem;
-            }
-            
-            .slogan {
-                padding: 0.6rem;
-                font-size: 0.9rem;
-            }
-
+        /* ============ Petits téléphones (≤ 420px) ============ */
+        @media (max-width: 420px) {
+            .container { padding: 0 10px; }
+            .card { padding: 0.9rem; }
+            .form-container { padding: 1rem 0.85rem; }
+            .users-filters select { flex-basis: 100%; }
+            .stat-number { font-size: 1.4rem; }
+            .avatar { width: 52px; height: 52px; }
+            .candidate-card img { width: 100px; height: 100px; }
+            .row-actions .btn i { display: none; }
+            .tuto-hint { display: none; }
         }
-        @media (max-width: 447px) {
-            .logo {
-                height: 54px;
-                width: auto;
-            }
 
-            header h1 {
-                margin-bottom: 0.5rem;
-                font-size: 13px;
-                margin-bottom: 0;
-            }
-            header p {
-                margin-bottom: 0.5rem;
-                font-size: 10px;
-            }
-            footer p {
-                font-size: 12px;
-            }
-
+        /* ============ Très petits écrans (≤ 340px) ============ */
+        @media (max-width: 340px) {
+            .admin-nav { grid-template-columns: 1fr; }
+            .admin-nav .btn:last-child:nth-child(odd) { grid-column: auto; }
+            .count-row { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .header-actions .btn { flex-basis: 100%; }
         }
-        @media (max-width: 401px) {
-            .logo {
-                height: 45px;
-                width: auto;
-            }
 
-            header h1 {
-                margin-bottom: 0.5rem;
-                font-size: 11px;
-                margin-bottom: 0;
-            }
-            header p {
-                margin-bottom: 0.5rem;
-                font-size: 8px;
-            }
-
+        /* ============ Téléphone en paysage (écran bas) ============ */
+        @media (max-height: 480px) and (orientation: landscape) {
+            .logo { height: clamp(28px, 9vh, 48px); }
+            main { min-height: 0; }
+            .confirmation-box { padding: 14px 16px; }
+            .loader-container { padding: 1rem 1.5rem; }
+            .tuto-title, .tuto-hint { display: none; }
         }
-        @media (max-width: 347px) {
-            .logo {
-                height: 34px;
-                width: auto;
-            }
 
-            header h1 {
-                margin-bottom: 0.5rem;
-                font-size: 11px;
-                margin-bottom: 0;
-            }
-            header p {
-                margin-bottom: 0.5rem;
-                font-size: 8px;
-            }
-            footer p {
-                font-size: 10px;
-            }
-
-        }
-        @media (max-width: 326px) {
-            .logo {
-                height: 30px;
-                width: auto;
-            }
-
-            header h1 {
-                margin-bottom: 0.5rem;
-                font-size: 10px;
-                margin-bottom: 0;
-            }
-            header p {
-                margin-bottom: 0.5rem;
-                font-size: 8px;
-            }
-
-        }
-    
         /* --- Sélecteur de langue --- */
         .lang-switch { display: flex; justify-content: flex-end; gap: 4px; margin: 10px 0 0; }
         .lang-switch button {
@@ -1357,7 +1403,7 @@
                 <div id="electionStatusMessage"></div>
                 <div id="selectedCandidateInfo" class="message message-info" style="display: none; text-align: center;">
                     <strong>Candidat sélectionné : </strong><span id="selectedCandidateName"></span>
-                    <button id="confirmVoteBtn" class="btn btn-success" style="margin-left: 1rem;">
+                    <button id="confirmVoteBtn" class="btn btn-success">
                         <i class="fas fa-check"></i> Confirmer mon vote
                     </button>
                 </div>
@@ -2160,6 +2206,7 @@
                 position: fixed;
                 top: 20px;
                 right: 20px;
+                max-width: calc(100vw - 40px);
                 background: var(--success-color);
                 color: white;
                 padding: 10px 15px;
@@ -2200,6 +2247,7 @@
                 position: fixed;
                 top: 20px;
                 right: 20px;
+                max-width: calc(100vw - 40px);
                 background: var(--success-color);
                 color: white;
                 padding: 10px 15px;
@@ -2848,28 +2896,25 @@
                     const candidateDiv = document.createElement('div');
                     candidateDiv.className = 'list-item';
                     candidateDiv.innerHTML = `
-                        <div style="flex-grow: 1;">
-                            <div style="display: flex; align-items: center; gap: 15px; flex-grow: 1;">
+                        <div class="row-body">
+                            <div class="row-main">
                                 <a href="${candidate.photo_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
                                     <img src="${candidate.photo_url || 'https://api.dicebear.com/8.x/initials/svg?seed=' + encodeURIComponent(candidate.prenom + ' ' + candidate.nom)}" 
                                     crossorigin="anonymous"
                                     alt="Photo de ${candidate.prenom} ${candidate.nom}"
-                                     style="width: 80px; height: 80px; border-radius: 30%; object-fit: cover; border: 2px solid var(--primary-color);">
+                                     class="avatar">
                                 </a>
                                 <div>
                                     <strong>${candidate.prenom} ${candidate.nom}</strong><br>
                                     <small>${candidate.cycle_display} - ${candidate.specialite} ${candidate.niveau} - ${candidate.campus}</small><br>
                                     <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-                                        <div style="width: 16px; height: 16px; border-radius: 50%; background: ${candidate.bureau_color}; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>
+                                        <div class="color-dot" style="background: ${candidate.bureau_color};"></div>
                                         <small>"${candidate.slogan}"</small><br>
                                     </div>
                                 </div>
                             </div>
-                            <div class="result-bar-container">
-                                <div class="result-bar" style="width: ${percentage}%">
-                                    ${candidate.votes} vote(s) (${percentage.toFixed(1)}%)
-                                </div>
-                            </div>
+                            <div class="result-label">${candidate.votes} vote(s) (${percentage.toFixed(1)}%)</div>
+<div class="result-bar-container"><div class="result-bar" style="width: ${percentage}%"></div></div>
                         </div>
                     `;
                     electionStatusMessage.appendChild(candidateDiv);
@@ -3063,12 +3108,12 @@
                 const userDiv = document.createElement('div');
                 userDiv.className = 'list-item';
                 userDiv.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 15px; flex-grow: 1;">
+                <div class="row-main">
                     <a href="${user.photo_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
                         <img src="${user.photo_url || 'https://api.dicebear.com/8.x/initials/svg?seed=' + encodeURIComponent(user.prenom + ' ' + user.nom)}" 
                         crossorigin="anonymous"
                         alt="Photo de ${user.prenom} ${user.nom}"
-                         style="width: 80px; height: 80px; border-radius: 30%; object-fit: cover; border: 2px solid var(--primary-color);">
+                         class="avatar">
                     </a>
                     <div>
                         <strong>${user.prenom} ${user.nom}</strong> (${user.matricule}) - ${user.telephone}<br>
@@ -3080,7 +3125,7 @@
                             <strong><i class="fas fa-robot"></i> ${t("Contrôle automatique du reçu")}</strong><br>${escapeHtml(user.verification_note)}</div>` : ''}
                     </div>
                 </div>
-                <div style="display: flex; gap: 10px;">
+                <div class="row-actions">
                     <button class="btn btn-success" data-user-id="${user.id}">
                         <i class="fas fa-check"></i> ${t("Valider")}
                     </button>
@@ -3327,18 +3372,18 @@
                 const bureauName = candidate.bureau_name || 'Bureau';
                 
                 candidateDiv.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 15px; flex-grow: 1;">
+                    <div class="row-main">
                         <a href="${candidate.photo_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
                             <img src="${candidate.photo_url || 'https://api.dicebear.com/8.x/initials/svg?seed=' + encodeURIComponent(candidate.prenom + ' ' + candidate.nom)}" 
                             crossorigin="anonymous"
                             alt="Photo de ${candidate.prenom} ${candidate.nom}"
-                             style="width: 80px; height: 80px; border-radius: 30%; object-fit: cover; border: 2px solid var(--primary-color);">
+                             class="avatar">
                         </a>
-                        <div style="flex-grow: 1;">
+                        <div class="row-body">
                             <strong>${candidate.prenom} ${candidate.nom}</strong><br>
                             <small>${candidate.cycle_display} - ${candidate.specialite} ${candidate.niveau} - ${candidate.campus}</small><br>
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-                                <div style="width: 16px; height: 16px; border-radius: 50%; background: ${bureauColor}; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>
+                                <div class="color-dot" style="background: ${bureauColor};"></div>
                                 <span style="font-size: 0.85rem; color: #666;">${bureauName}</span>
                             </div>
                             <small>"${candidate.slogan}"</small><br>
@@ -3588,28 +3633,25 @@
                 const candidateDiv = document.createElement('div');
                 candidateDiv.className = 'list-item';
                 candidateDiv.innerHTML = `
-                    <div style="flex-grow: 1;">
-                        <div style="display: flex; align-items: center; gap: 15px; flex-grow: 1;">
+                    <div class="row-body">
+                        <div class="row-main">
                             <a href="${candidate.photo_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
                                 <img src="${candidate.photo_url || 'https://api.dicebear.com/8.x/initials/svg?seed=' + encodeURIComponent(candidate.prenom + ' ' + candidate.nom)}" 
                                 crossorigin="anonymous"
                                 alt="Photo de ${candidate.prenom} ${candidate.nom}"
-                                 style="width: 80px; height: 80px; border-radius: 30%; object-fit: cover; border: 2px solid var(--primary-color);">
+                                 class="avatar">
                             </a>
                             <div>
                                 <strong>${candidate.prenom} ${candidate.nom}</strong><br>
                                 <small>${candidate.cycle_display} - ${candidate.specialite} ${candidate.niveau} - ${candidate.campus}</small><br>
                                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-                                    <div style="width: 16px; height: 16px; border-radius: 50%; background: ${candidate.bureau_color}; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>
+                                    <div class="color-dot" style="background: ${candidate.bureau_color};"></div>
                                     <small>"${candidate.slogan}"</small><br>
                                 </div>
                             </div>
                         </div>
-                        <div class="result-bar-container">
-                            <div class="result-bar" style="width: ${percentage}%">
-                                ${candidate.votes} vote(s) (${percentage.toFixed(1)}%)
-                            </div>
-                        </div>
+                        <div class="result-label">${candidate.votes} vote(s) (${percentage.toFixed(1)}%)</div>
+<div class="result-bar-container"><div class="result-bar" style="width: ${percentage}%"></div></div>
                     </div>
                 `;
                  console.log("Before resultsContainer.appendChild(candidateDiv);", state.candidates.length);
@@ -3717,7 +3759,7 @@
             const totalConnectes = users.filter(u => u.has_logged_in).length;
             
             const countDiv = document.createElement('div');
-            countDiv.className = 'list-item';
+            countDiv.className = 'list-item count-row';
             countDiv.innerHTML = `
                 <div><h4>${t('Total des inscrits : {n}', {n: totalInscrits})}</h4></div>
                 <div><h4>${t('Total en attente : {n}', {n: state.pendingUsers.length})}</h4></div>
@@ -3736,12 +3778,12 @@
                 const userDiv = document.createElement('div');
                 userDiv.className = 'list-item';
                 userDiv.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 15px; flex-grow: 1;">
+                    <div class="row-main">
                         <a href="${user.photo_url}" target="_blank" style="color: var(--secondary-color); text-decoration: none;">
                             <img src="${user.photo_url || 'https://api.dicebear.com/8.x/initials/svg?seed=' + encodeURIComponent(user.prenom + ' ' + user.nom)}" 
                             crossorigin="anonymous" loading="lazy" decoding="async"
                             alt="Photo de ${user.prenom} ${user.nom}"
-                             style="width: 80px; height: 80px; border-radius: 30%; object-fit: cover; border: 2px solid var(--primary-color);">
+                             class="avatar">
                         </a>
                         <div>
                             <strong>${user.prenom} ${user.nom}</strong> (${user.matricule}) - ${user.telephone}<br>
@@ -3856,7 +3898,7 @@
                     margin: 0;
                 ">
                     <!-- Titre (optionnel, peut être retiré) -->
-                    <div style="
+                    <div class="tuto-title" style="
                         position: absolute;
                         top: 20px;
                         left: 50%;
@@ -3901,7 +3943,7 @@
                     </div>
                     
                     <!-- Instructions (optionnel) -->
-                    <div style="
+                    <div class="tuto-hint" style="
                         position: absolute;
                         bottom: 20px;
                         left: 50%;
