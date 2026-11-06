@@ -2721,6 +2721,8 @@
                 
                 await apiFetch('/api/logout/');
                 state.currentUser = null;
+                currentAdminTab = DEFAULT_ADMIN_TAB;          // la prochaine connexion repart de la première section
+                try { sessionStorage.removeItem('adminTab'); } catch (e) {}
                 showView('authView');
             });
         });
@@ -3005,8 +3007,17 @@
         // INTERFACE ADMINISTRATEUR AMÉLIORÉE
         // =================================================================
 
+        // Section ouverte du tableau de bord admin : mémorisée pour que l'actualisation ne la change pas.
+        // (sessionStorage = survit aussi à un rechargement de la page, et disparaît à la fermeture de l'onglet)
+        const DEFAULT_ADMIN_TAB = 'validationContent';
+        let currentAdminTab = DEFAULT_ADMIN_TAB;
+        try {
+            const saved = sessionStorage.getItem('adminTab');
+            if (saved && document.getElementById(saved)) currentAdminTab = saved;
+        } catch (e) {}
+
         function renderAdminDashboard() {
-            switchAdminTab('validationContent');
+            switchAdminTab(currentAdminTab);      // on reste sur la section en cours (au lieu de toujours revenir à la première)
             renderPendingUsers();
             renderCandidatesList();
             renderElectionStatus();
@@ -3021,6 +3032,8 @@
         });
 
         function switchAdminTab(targetId) {
+            currentAdminTab = targetId;
+            try { sessionStorage.setItem('adminTab', targetId); } catch (e) {}
             // Désactiver tous les contenus
             adminContents.forEach(content => content.classList.remove('active'));
             // Désactiver tous les boutons
