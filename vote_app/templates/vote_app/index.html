@@ -325,6 +325,8 @@
         }
         .results-visibility-bar small { display: block; color: #555; margin-top: 2px; }
         .results-visibility-bar.is-visible { background: #e8f6ec; border-color: #9fd3ac; }
+        .results-visibility-bar.is-off { background: #fdecea; border-color: #f1aeb5; }
+        .login-disabled-note { margin-bottom: 12px; }
 
         .admin-content {
             display: none;
@@ -1012,6 +1014,7 @@
             .stat-label { font-size: 0.8rem; }
             .results-visibility-bar { flex-direction: column; align-items: stretch; text-align: center; }
             .results-visibility-bar .btn { width: 100%; }
+            #passwordLoginBar .btn { width: 100%; }
 
             /* Vote : cartes candidats pleine largeur */
             .candidates-grid { grid-template-columns: 1fr; gap: 1rem; }
@@ -1261,6 +1264,7 @@
                 </div>
 
                 <h2>Connexion</h2>
+                <div id="loginDisabledNote" class="message message-error login-disabled-note" style="display: none;">La connexion par matricule et mot de passe est temporairement désactivée par l'administrateur. Utilisez le QR code de votre reçu.</div>
                 <form id="loginForm">
                     <div id="loginError" class="message message-error" style="display: none;"></div>
                     <div class="form-group">
@@ -1545,6 +1549,13 @@
             <div id="electionContent" class="admin-content card">
              <h3>Statut de l'élection</h3>
              <p>Statut actuel : <strong id="electionStatusAdmin"></strong></p>
+             <div id="passwordLoginBar" class="results-visibility-bar" style="margin-top: 12px;">
+                 <div>
+                     <strong id="passwordLoginLabel"></strong>
+                     <small id="passwordLoginHint"></small>
+                 </div>
+                 <button type="button" id="togglePasswordLoginBtn" class="btn btn-primary"></button>
+             </div>
              <br>
              <div id="electionControlButtons">
                  <button id="startElectionBtn" class="btn btn-success">
@@ -1664,6 +1675,14 @@
   "Montrer aux étudiants": "Show to students",
   "Montrer les résultats à tous les étudiants ?": "Show the results to all students?",
   "Cacher les résultats aux étudiants ?": "Hide the results from students?",
+  "Connexion par mot de passe activée": "Password login enabled",
+  "Connexion par mot de passe désactivée": "Password login disabled",
+  "Les étudiants peuvent se connecter avec leur matricule et mot de passe.": "Students can log in with their matricule and password.",
+  "Les étudiants ne peuvent se connecter qu'avec le QR code de leur reçu.": "Students can only log in with the QR code on their receipt.",
+  "Activer": "Enable",
+  "Activer la connexion par matricule et mot de passe pour les étudiants ?": "Enable matricule and password login for students?",
+  "Désactiver la connexion par matricule et mot de passe pour les étudiants ?": "Disable matricule and password login for students?",
+  "La connexion par matricule et mot de passe est temporairement désactivée par l'administrateur. Utilisez le QR code de votre reçu.": "Matricule and password login is temporarily disabled by the administrator. Use the QR code on your receipt.",
   "Les résultats seront publiés prochainement par l'administration.": "The results will be published soon by the administration.",
   "L'élection est terminée. Les résultats seront publiés prochainement par l'administration.": "The election is over. The results will be published soon by the administration.",
   "Vous n'aviez pas encore créé votre compte ?": "Hadn't created your account yet?",
@@ -2043,6 +2062,7 @@
             candidates: [],
             electionStatus: 'pending',
             resultsVisible: false,
+            passwordLoginEnabled: true,
             pendingUsers: [],
             allUsers: []
         };
@@ -2099,6 +2119,7 @@
                     state.candidates = data.candidates;
                     state.electionStatus = data.election_status;
                     state.resultsVisible = !!data.results_visible;
+                    state.passwordLoginEnabled = data.password_login_enabled !== false;
                     state.pendingUsers = data.pending_users;
                     state.allUsers = data.all_users;
                     lastUpdateTimestamp = currentTimestamp;
@@ -2134,6 +2155,9 @@
                 return true;
             }
             if (state.resultsVisible !== !!newData.results_visible) {
+                return true;
+            }
+            if (state.passwordLoginEnabled !== (newData.password_login_enabled !== false)) {
                 return true;
             }
             
@@ -2375,6 +2399,7 @@
         function showView(viewId) {
             views.forEach(view => view.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
+            if (viewId === 'authView' && typeof loadLoginOptions === 'function') loadLoginOptions();
         }
 
         function displayMessage(element, message, type = 'error') {
@@ -2788,6 +2813,7 @@
                 state.candidates = data.candidates;
                 state.electionStatus = data.election_status;
                     state.resultsVisible = !!data.results_visible;
+                    state.passwordLoginEnabled = data.password_login_enabled !== false;
                 state.pendingUsers = data.pending_users;
                 state.allUsers = data.all_users;
                 navigateToDashboard();
@@ -3549,7 +3575,59 @@
         }
 
         // Barre « montrer / cacher les résultats aux étudiants » (section admin)
+        // Interrupteur « connexion par matricule + mot de passe » (section Gestion de l'Élection)
+        function renderPasswordLogin() {
+            const bar = document.getElementById('passwordLoginBar');
+            if (!bar) return;
+            const on = state.passwordLoginEnabled;
+            bar.classList.toggle('is-visible', on);
+            bar.classList.toggle('is-off', !on);
+            document.getElementById('passwordLoginLabel').textContent = on
+                ? t('Connexion par mot de passe activée')
+                : t('Connexion par mot de passe désactivée');
+            document.getElementById('passwordLoginHint').textContent = on
+                ? t('Les étudiants peuvent se connecter avec leur matricule et mot de passe.')
+                : t('Les étudiants ne peuvent se connecter qu\'avec le QR code de leur reçu.');
+            document.getElementById('togglePasswordLoginBtn').innerHTML = on
+                ? '<i class="fas fa-lock"></i> ' + t('Désactiver')
+                : '<i class="fas fa-unlock"></i> ' + t('Activer');
+        }
+
+        document.getElementById('togglePasswordLoginBtn').addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            const next = !state.passwordLoginEnabled;
+            if (!confirm(next
+                ? t('Activer la connexion par matricule et mot de passe pour les étudiants ?')
+                : t('Désactiver la connexion par matricule et mot de passe pour les étudiants ?'))) return;
+            btn.disabled = true;
+            try {
+                const res = await apiFetch('/api/election/', {
+                    method: 'PUT',
+                    body: JSON.stringify({ password_login_enabled: next })
+                });
+                state.passwordLoginEnabled = res.password_login_enabled !== false;
+                renderPasswordLogin();
+            } catch (error) {
+                alert(t('Erreur : {msg}', {msg: error.message}));
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        // Page de connexion : grise le formulaire quand l'admin a désactivé les identifiants
+        async function loadLoginOptions() {
+            try {
+                const r = await fetch('/api/login-options/', { credentials: 'same-origin' });
+                const o = await r.json();
+                const enabled = o.password_login_enabled !== false;
+                document.getElementById('loginDisabledNote').style.display = enabled ? 'none' : 'block';
+                loginForm.querySelectorAll('input, button').forEach(el => { el.disabled = !enabled; });
+                loginForm.style.opacity = enabled ? '' : '0.5';
+            } catch (e) { /* on laisse le formulaire actif : le serveur tranchera */ }
+        }
+
         function renderResultsVisibility() {
+            renderPasswordLogin();
             const bar = document.getElementById('resultsVisibilityBar');
             if (!bar) return;
             const label = document.getElementById('resultsVisibilityLabel');

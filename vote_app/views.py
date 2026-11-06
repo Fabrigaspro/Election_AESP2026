@@ -383,6 +383,14 @@ def _open_session(request, user, profile, method='password'):
     login(request, user)
 
 
+def login_options_view(request):
+    """Public : indique à la page de connexion quels modes de connexion sont ouverts."""
+    return JsonResponse({
+        'password_login_enabled': ElectionState.load().password_login_enabled,
+        'qr_login_enabled': getattr(settings, 'QR_LOGIN_ENABLED', True),
+    })
+
+
 @csrf_exempt # Connection d'un utilisateur
 def login_view(request):
     print("Connexion en cours demarrée.......")
@@ -408,6 +416,14 @@ def login_view(request):
                         'error': 'Compte déjà connecté sur un autre appareil. Déconnectez-vous d\'abord ou attendez que la session expire.'
                     }, status=400)
                 
+                # Interrupteur admin : connexion par identifiants coupée pour les étudiants (les admins passent toujours)
+                if not profile.is_admin and not ElectionState.load().password_login_enabled:
+                    return JsonResponse({
+                        'success': False,
+                        'error': "La connexion par matricule et mot de passe est temporairement désactivée par l'administrateur. "
+                                 "Utilisez le QR code de votre reçu."
+                    }, status=403)
+
                 _open_session(request, user, profile)
 
                 try:
@@ -618,6 +634,7 @@ def dashboard_data_view(request):
         'user': user_to_dict(request.user),
         'election_status': election.status,
         'results_visible': election.results_visible,   # résultats publiés aux étudiants ?
+        'password_login_enabled': election.password_login_enabled,   # connexion matricule + mot de passe ouverte ?
         'candidates': candidates,
         'pending_users': pending_users,
         'all_users': all_users,
@@ -777,6 +794,14 @@ def manage_election_view(request):
             election.results_visible = bool(data.get('results_visible'))
             election.save(update_fields=['results_visible'])
             return JsonResponse({'status': election.status, 'results_visible': election.results_visible})
+
+        # Activer / désactiver la connexion par matricule + mot de passe des étudiants
+        # (update() et non save() : save() remet les votes à zéro quand l'élection est « pending »)
+        if 'password_login_enabled' in data:
+            ElectionState.objects.filter(pk=election.pk).update(
+                password_login_enabled=bool(data.get('password_login_enabled')))
+            return JsonResponse({'status': election.status,
+                                 'password_login_enabled': bool(data.get('password_login_enabled'))})
 
         new_status = data.get('status')
         if new_status in ['pending', 'active', 'closed']:

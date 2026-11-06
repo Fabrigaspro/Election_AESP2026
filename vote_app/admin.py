@@ -29,7 +29,8 @@ class CustomUserAdmin(admin.ModelAdmin):
     list_display = ('matricule','get_fullname','telephone', 'a_deja_connecte', 'derniere_connexion', 'role', 'status', 'campus', 'cycle', 'specialite', 'niveau', 'is_connected', 'last_activity', 'is_actually_connected', 'has_active_session', 'session_expires', 'session_token', 'has_voted', 'is_admin', 'photo', 'recu', 'verification_source', 'verification_score')
     list_filter = (DejaConnecteFilter, 'matricule', 'role', 'status', 'cycle', 'niveau', 'campus', 'verification_source')
     readonly_fields = ('recu_hash', 'verification_source', 'verification_score', 'verification_note', 'verified_at')
-    search_fields = ('cycle', 'niveau',)
+    # Recherche : matricule, nom, prénom, téléphone, campus, cycle, spécialité (niveau est un nombre : non textuel)
+    search_fields = ('matricule', 'user__username', 'user__first_name', 'user__last_name', 'telephone', 'campus', 'cycle', 'specialite')
 
     def get_fullname(self, obj):
         return obj.get_fullname()
@@ -78,12 +79,12 @@ class CandidateAdmin(admin.ModelAdmin):
     
 @admin.register(ElectionState)
 class ElectionAdmin(admin.ModelAdmin):
-    list_display = ('status',)
+    list_display = ('status', 'results_visible', 'password_login_enabled')
     list_filter = ('status',)
-    search_fields = ('title',)
 
 @admin.register(Vote)
 class VoteAdmin(admin.ModelAdmin):
     list_display = ('profile', 'candidate', 'voted_at')
     list_filter = ('voted_at',)
+    search_fields = ('profile__user__username', 'profile__user__first_name', 'profile__user__last_name', 'candidate__nom', 'candidate__prenom')
     readonly_fields = ('voted_at',)

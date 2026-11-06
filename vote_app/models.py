@@ -547,7 +547,8 @@ class ElectionState(models.Model):
     ]
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     results_visible = models.BooleanField(default=False)
-    
+    password_login_enabled = models.BooleanField(default=True)
+
     # Assurer qu'il n'y a qu'une seule instance de ce modèle
     def save(self, *args, **kwargs):
         self.pk = 1
