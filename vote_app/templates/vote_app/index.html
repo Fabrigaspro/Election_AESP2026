@@ -1264,7 +1264,7 @@
                 </div>
 
                 <h2>Connexion</h2>
-                <div id="loginDisabledNote" class="message message-error login-disabled-note" style="display: none;">La connexion par matricule et mot de passe est temporairement désactivée par l'administrateur. Utilisez le QR code de votre reçu. <a href="#" id="adminAccessLink" style="display:block;margin-top:6px;font-size:0.9em;text-decoration:underline;">Accès administrateur</a></div>
+                <div id="loginDisabledNote" class="message message-error login-disabled-note" style="display: none;">La connexion par matricule et mot de passe est temporairement désactivée par l'administrateur. Utilisez le QR code de votre reçu.</div>
                 <form id="loginForm">
                     <div id="loginError" class="message message-error" style="display: none;"></div>
                     <div class="form-group">
@@ -1681,7 +1681,6 @@
   "Les étudiants ne peuvent se connecter qu'avec le QR code de leur reçu.": "Students can only log in with the QR code on their receipt.",
   "Activer": "Enable",
   "Activer la connexion par matricule et mot de passe pour les étudiants ?": "Enable matricule and password login for students?",
-  "Accès administrateur": "Administrator access",
   "Désactiver la connexion par matricule et mot de passe pour les étudiants ?": "Disable matricule and password login for students?",
   "La connexion par matricule et mot de passe est temporairement désactivée par l'administrateur. Utilisez le QR code de votre reçu.": "Matricule and password login is temporarily disabled by the administrator. Use the QR code on your receipt.",
   "Les résultats seront publiés prochainement par l'administration.": "The results will be published soon by the administration.",
@@ -3616,21 +3615,17 @@
         });
 
         // Page de connexion : grise le formulaire quand l'admin a désactivé les identifiants
+        window.addEventListener('hashchange', () => loadLoginOptions());
         async function loadLoginOptions() {
             try {
                 const r = await fetch('/api/login-options/', { credentials: 'same-origin' });
                 const o = await r.json();
-                const enabled = o.password_login_enabled !== false;
+                // Lien réservé à l'admin : https://votre-site/#admin dégrise le formulaire (le serveur refuse toujours les étudiants)
+                const isAdminLink = location.hash.toLowerCase() === '#admin';
+                const enabled = o.password_login_enabled !== false || isAdminLink;
                 document.getElementById('loginDisabledNote').style.display = enabled ? 'none' : 'block';
                 loginForm.querySelectorAll('input, button').forEach(el => { el.disabled = !enabled; });
                 loginForm.style.opacity = enabled ? '' : '0.5';
-                const adminLink = document.getElementById('adminAccessLink');
-                if (adminLink) adminLink.onclick = (ev) => {
-                    ev.preventDefault();          // le serveur refuse toujours les étudiants : ceci ne fait que dégriser le formulaire
-                    loginForm.querySelectorAll('input, button').forEach(el => { el.disabled = false; });
-                    loginForm.style.opacity = '';
-                    document.getElementById('loginMatricule').focus();
-                };
             } catch (e) { /* on laisse le formulaire actif : le serveur tranchera */ }
         }
 
