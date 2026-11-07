@@ -711,6 +711,48 @@ def manage_user_status_view(request, user_id):
     
     return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
 
+@csrf_exempt
+@login_required  # Actions groupées : valider / désactiver / supprimer plusieurs étudiants
+def bulk_users_view(request):
+    if not is_user_admin(request.user):
+        return JsonResponse({'error': 'Accès refusé.'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+    try:
+        data = json.loads(request.body)
+        ids = [int(i) for i in data.get('ids', [])]
+    except (TypeError, ValueError, AttributeError):
+        return JsonResponse({'error': 'Requête invalide.'}, status=400)
+    action = data.get('action')
+    if action not in ('validate', 'deactivate', 'delete'):
+        return JsonResponse({'error': 'Action invalide.'}, status=400)
+    if not ids:
+        return JsonResponse({'error': 'Aucun étudiant sélectionné.'}, status=400)
+    if len(ids) > 5000:
+        return JsonResponse({'error': 'Sélection trop grande (5000 maximum).'}, status=400)
+
+    # jamais un administrateur, jamais soi-même
+    users = User.objects.filter(id__in=ids, profile__is_admin=False).exclude(id=request.user.id)
+    profiles = Profile.objects.filter(user__in=users)
+    skipped_voted = 0
+
+    with transaction.atomic():
+        if action == 'validate':
+            done = profiles.filter(status='pending').update(
+                status='validated', verification_source='admin', verified_at=timezone.now())
+        elif action == 'deactivate':
+            done = profiles.filter(status='validated').update(status='pending')
+        else:
+            # on ne supprime pas un étudiant qui a voté : son vote est déjà compté dans les résultats
+            skipped_voted = profiles.filter(has_voted=True).count()
+            deletable = users.filter(profile__has_voted=False)
+            done = deletable.count()
+            deletable.delete()
+
+    return JsonResponse({'success': True, 'action': action, 'done': done,
+                         'skipped_voted': skipped_voted, 'ignored': len(ids) - done - skipped_voted})
+
+
 @login_required  # Creation d'un nouveau candidat
 def manage_candidates_view(request):
     print("manage_candidates_view")

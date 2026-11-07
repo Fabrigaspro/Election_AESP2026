@@ -325,6 +325,22 @@
         }
         .results-visibility-bar small { display: block; color: #555; margin-top: 2px; }
         .results-visibility-bar.is-visible { background: #e8f6ec; border-color: #9fd3ac; }
+        /* Sélection multiple (étudiants) */
+        .bulk-bar {
+            display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap;
+            position: sticky; top: 0; z-index: 20;
+            padding: 10px 12px; margin: 0 0 12px; border-radius: 8px;
+            background: #f4f6fa; border: 1px solid #d5dbe8; box-shadow: 0 2px 6px rgba(0,0,0,.06);
+        }
+        .bulk-bar.has-selection { background: #e6f0ff; border-color: #9db9e8; }
+        .bulk-all { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; }
+        .bulk-all input, .row-check { width: 22px; height: 22px; flex-shrink: 0; cursor: pointer; accent-color: var(--secondary-color, #3498db); }
+        .bulk-count { color: #444; font-size: 0.95em; }
+        .bulk-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+        .bulk-actions .btn { padding: 8px 14px; }
+        .bulk-actions .btn:disabled { opacity: .45; cursor: not-allowed; }
+        .row-check { margin-top: 4px; }
+        .list-item.is-selected { background: #e6f0ff !important; }
         .results-visibility-bar.is-off { background: #fdecea; border-color: #f1aeb5; }
         .login-disabled-note { margin-bottom: 12px; }
 
@@ -1015,6 +1031,9 @@
             .results-visibility-bar { flex-direction: column; align-items: stretch; text-align: center; }
             .results-visibility-bar .btn { width: 100%; }
             #passwordLoginBar .btn { width: 100%; }
+            .bulk-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+            .bulk-actions { margin-left: 0; display: grid; grid-template-columns: 1fr 1fr; }
+            .bulk-actions .btn { width: 100%; padding: 12px 8px; }
 
             /* Vote : cartes candidats pleine largeur */
             .candidates-grid { grid-template-columns: 1fr; gap: 1rem; }
@@ -1453,6 +1472,7 @@
             <!-- Contenu Admin: Validation -->
             <div id="validationContent" class="admin-content card">
                 <h3>Étudiants en attente de validation</h3>
+                <div id="pendingBulkBar" class="bulk-bar" style="display:none;"></div>
                 <div id="pendingUsersList"></div>
             </div>
 
@@ -1625,6 +1645,7 @@
                 </div>
                 <h4>Liste des Étudiants inscrits à l'AESP</h4>
                 <p id="usersCount" style="margin: 5px 0 10px; color: #666;"></p>
+                <div id="usersBulkBar" class="bulk-bar" style="display:none;"></div>
                 <div id="usersList"></div>
             </div>
         </div>
@@ -1675,6 +1696,16 @@
   "Montrer aux étudiants": "Show to students",
   "Montrer les résultats à tous les étudiants ?": "Show the results to all students?",
   "Cacher les résultats aux étudiants ?": "Hide the results from students?",
+  "Sélectionner": "Select",
+  "Tout sélectionner ({n})": "Select all ({n})",
+  "{n} sélectionné(s)": "{n} selected",
+  "Annuler la sélection": "Clear selection",
+  "Valider {n} étudiant(s) ? Leur compte sera activé.": "Validate {n} student(s)? Their account will be activated.",
+  "Désactiver {n} étudiant(s) ? Ils repasseront « en attente » et ne pourront plus voter.": "Deactivate {n} student(s)? They will go back to \"pending\" and will no longer be able to vote.",
+  "Supprimer définitivement {n} étudiant(s) ? Cette action est irréversible.": "Permanently delete {n} student(s)? This cannot be undone.",
+  "Pour confirmer la suppression de {n} comptes, tapez SUPPRIMER": "To confirm deleting {n} accounts, type DELETE",
+  "Terminé : {done} compte(s) traité(s).": "Done: {done} account(s) processed.",
+  "{n} compte(s) non supprimé(s) car l'étudiant a déjà voté.": "{n} account(s) not deleted because the student has already voted.",
   "Connexion par mot de passe activée": "Password login enabled",
   "Connexion par mot de passe désactivée": "Password login disabled",
   "Les étudiants peuvent se connecter avec leur matricule et mot de passe.": "Students can log in with their matricule and password.",
@@ -2057,6 +2088,7 @@
         // VARIABLES GLOBALES
         // =================================================================
         let selectedCandidateId = null;
+        const bulkSel = { users: new Set(), pending: new Set() };   // étudiants cochés (liste des étudiants / validations)
         let state = {
             currentUser: null,
             candidates: [],
@@ -3119,12 +3151,118 @@
             }
         }
 
+        // =================================================================
+        // SÉLECTION MULTIPLE : valider / désactiver / supprimer plusieurs étudiants
+        // =================================================================
+        function addRowCheck(rowDiv, userId, kind) {
+            const checked = bulkSel[kind].has(userId);
+            const rm = rowDiv.querySelector('.row-main');
+            if (rm) rm.insertAdjacentHTML('afterbegin',
+                `<input type="checkbox" class="row-check" data-user-id="${userId}" data-kind="${kind}" ${checked ? 'checked' : ''} aria-label="${t('Sélectionner')}">`);
+            rowDiv.classList.toggle('is-selected', checked);
+        }
+
+        function bulkScope(kind) {
+            return kind === 'pending' ? state.pendingUsers : getFilteredUsers();
+        }
+
+        function renderBulkBar(kind) {
+            const bar = document.getElementById(kind === 'pending' ? 'pendingBulkBar' : 'usersBulkBar');
+            if (!bar) return;
+            const sel = bulkSel[kind];
+            const known = new Set((kind === 'pending' ? state.pendingUsers : state.allUsers).map(u => u.id));
+            [...sel].forEach(id => { if (!known.has(id)) sel.delete(id); });        // comptes disparus depuis (actualisation)
+            const scope = bulkScope(kind);
+            if (!scope.length) { bar.style.display = 'none'; return; }
+            const nSel = scope.filter(u => sel.has(u.id)).length;
+            bar.style.display = 'flex';
+            bar.classList.toggle('has-selection', nSel > 0);
+            const dis = nSel ? '' : 'disabled';
+            bar.innerHTML = `
+                <label class="bulk-all"><input type="checkbox" class="bulk-all-check"> <span>${t('Tout sélectionner ({n})', {n: scope.length})}</span></label>
+                <span class="bulk-count">${t('{n} sélectionné(s)', {n: nSel})}</span>
+                <div class="bulk-actions">
+                    <button type="button" class="btn btn-success" data-bulk="validate" ${dis}><i class="fas fa-check"></i> ${t('Valider')}</button>
+                    ${kind === 'users' ? `<button type="button" class="btn btn-warning" data-bulk="deactivate" ${dis}><i class="fas fa-ban"></i> ${t('Désactiver')}</button>` : ''}
+                    <button type="button" class="btn btn-danger" data-bulk="delete" ${dis}><i class="fas fa-trash"></i> ${t('Supprimer')}</button>
+                    <button type="button" class="btn" data-bulk="clear" ${dis}>${t('Annuler la sélection')}</button>
+                </div>`;
+            const all = bar.querySelector('.bulk-all-check');
+            all.checked = nSel > 0 && nSel === scope.length;
+            all.indeterminate = nSel > 0 && nSel < scope.length;
+        }
+
+        function syncRowChecks(kind) {
+            const list = kind === 'pending' ? pendingUsersList : usersList;
+            list.querySelectorAll('.row-check').forEach(cb => {
+                const on = bulkSel[kind].has(Number(cb.dataset.userId));
+                cb.checked = on;
+                cb.closest('.list-item').classList.toggle('is-selected', on);
+            });
+        }
+
+        async function runBulk(kind, action) {
+            const sel = bulkSel[kind];
+            const ids = bulkScope(kind).map(u => u.id).filter(id => sel.has(id));
+            if (!ids.length) return;
+            if (action === 'clear') { sel.clear(); syncRowChecks(kind); renderBulkBar(kind); return; }
+            const n = ids.length;
+            const question = {
+                validate: t('Valider {n} étudiant(s) ? Leur compte sera activé.', {n}),
+                deactivate: t('Désactiver {n} étudiant(s) ? Ils repasseront « en attente » et ne pourront plus voter.', {n}),
+                delete: t('Supprimer définitivement {n} étudiant(s) ? Cette action est irréversible.', {n}),
+            }[action];
+            if (!confirm(question)) return;
+            if (action === 'delete' && n >= 10) {
+                const word = (prompt(t('Pour confirmer la suppression de {n} comptes, tapez SUPPRIMER', {n})) || '').trim().toUpperCase();
+                if (word !== 'SUPPRIMER' && word !== 'DELETE') return;
+            }
+            const bar = document.getElementById(kind === 'pending' ? 'pendingBulkBar' : 'usersBulkBar');
+            bar.querySelectorAll('button').forEach(b => b.disabled = true);
+            try {
+                const res = await apiFetch('/api/users/bulk/', { method: 'POST', body: JSON.stringify({ ids, action }) });
+                sel.clear();
+                let msg = t('Terminé : {done} compte(s) traité(s).', {done: res.done});
+                if (res.skipped_voted) msg += '\n' + t('{n} compte(s) non supprimé(s) car l\'étudiant a déjà voté.', {n: res.skipped_voted});
+                alert(msg);
+                await checkSession();
+            } catch (error) {
+                alert(t('Erreur : {msg}', {msg: error.message}));
+                renderBulkBar(kind);
+            }
+        }
+
+        ['users', 'pending'].forEach(kind => {
+            const list = kind === 'pending' ? pendingUsersList : usersList;
+            const bar = document.getElementById(kind === 'pending' ? 'pendingBulkBar' : 'usersBulkBar');
+            list.addEventListener('change', (e) => {
+                const cb = e.target.closest('.row-check');
+                if (!cb) return;
+                const id = Number(cb.dataset.userId);
+                if (cb.checked) bulkSel[kind].add(id); else bulkSel[kind].delete(id);
+                cb.closest('.list-item').classList.toggle('is-selected', cb.checked);
+                renderBulkBar(kind);
+            });
+            bar.addEventListener('change', (e) => {
+                if (!e.target.classList.contains('bulk-all-check')) return;
+                const scope = bulkScope(kind);
+                if (e.target.checked) scope.forEach(u => bulkSel[kind].add(u.id)); else bulkSel[kind].clear();
+                syncRowChecks(kind);
+                renderBulkBar(kind);
+            });
+            bar.addEventListener('click', (e) => {
+                const b = e.target.closest('button[data-bulk]');
+                if (b && !b.disabled) runBulk(kind, b.dataset.bulk);
+            });
+        });
+
         function escapeHtml(str) {
             return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         }
 
         function renderPendingUsers() {
             pendingUsersList.innerHTML = '';
+            renderBulkBar('pending');
             if (state.pendingUsers.length === 0) {
                 pendingUsersList.innerHTML = '<p>' + t("Aucun étudiant en attente de validation.") + '</p>';
                 return;
@@ -3160,6 +3298,7 @@
                     </button>
                 </div>
             `;
+                addRowCheck(userDiv, user.id, 'pending');
                 pendingUsersList.appendChild(userDiv);
             });
         }
@@ -3822,9 +3961,10 @@
         let usersShown = USERS_PAGE;
 
         function renderUsersList(resetPage) {
-            if (resetPage === true) usersShown = USERS_PAGE;
+            if (resetPage === true) { usersShown = USERS_PAGE; bulkSel.users.clear(); }   // nouveau filtre = nouvelle sélection
             usersList.innerHTML = '';
             if (state.allUsers.length === 0) {
+                renderBulkBar('users');
                 usersCount.textContent = '';
                 usersList.innerHTML = '<p>' + t("Aucun étudiant enregistré.") + '</p>';
                 return;
@@ -3832,6 +3972,7 @@
         
             refreshSpecialiteOptions();
             const users = getFilteredUsers();
+            renderBulkBar('users');
             usersCount.textContent = t('{n} étudiant(s) affiché(s) sur {m}', {n: users.length, m: state.allUsers.length});
         
             // Totaux globaux (inchangés)
@@ -3885,6 +4026,7 @@
                         </button>
                     `;
                 }
+                addRowCheck(userDiv, user.id, 'users');
                 usersList.appendChild(userDiv);
             });
 
