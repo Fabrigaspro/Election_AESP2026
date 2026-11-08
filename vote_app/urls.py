@@ -27,4 +27,5 @@ urlpatterns = [
     path('api/candidates/<int:candidate_id>/', views.manage_candidate_detail_view, name='api_manage_candidate_detail'),
     path('api/election/', views.manage_election_view, name='api_manage_election'),
     path('api/election/reset/', views.reset_election_view, name='reset_election'),
+    path('api/election/pv/', views.pv_pdf_view, name='election_pv'),
 ]

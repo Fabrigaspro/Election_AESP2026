@@ -24,6 +24,10 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
+import hashlib
+from django.db.models import Count, Q
+from . import pv_generator
+
 # Méthodes utilitaires pour les choix dynamiques
 def get_specialites_by_cycle(cycle):
     """Retourne les spécialités disponibles pour un cycle donné"""
@@ -878,4 +882,54 @@ def reset_election_view(request):
     
     return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
 
+@login_required  # Génère le procès-verbal PDF des résultats
+def pv_pdf_view(request):
+    if not is_user_admin(request.user):
+        return JsonResponse({'error': 'Accès refusé.'}, status=403)
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
 
+    election = ElectionState.load()
+    if election.status != 'closed':
+        return JsonResponse({'error': "Le PV ne peut être généré qu'une fois l'élection terminée."}, status=400)
+
+    # Les résultats sont recomptés depuis la table Vote (source de vérité)
+    candidats = Candidate.objects.annotate(nb=Count('vote_records')).order_by('-nb', 'nom', 'prenom')
+    total_votes = Vote.objects.count()
+
+    # Électeurs = comptes validés + ceux qui ont voté (même désactivés depuis)
+    electeurs = Profile.objects.filter(is_admin=False).filter(
+        Q(status='validated') | Q(votes__isnull=False)).distinct()
+    inscrits = electeurs.count()
+
+    # Classement avec égalités (même rang pour le même nombre de voix)
+    classement, rang_prec, voix_prec = [], 0, None
+    for i, c in enumerate(candidats, start=1):
+        if c.nb != voix_prec:
+            rang_prec, voix_prec = i, c.nb
+        classement.append({'rang': rang_prec, 'nom': f"{c.prenom} {c.nom}",
+                           'bureau': c.bureau_name, 'voix': c.nb})
+
+    # Participation par cycle
+    cycles = dict(Profile.CYCLE_CHOICES)
+    ins_cycle = {r['cycle']: r['n'] for r in electeurs.values('cycle').annotate(n=Count('id', distinct=True))}
+    vot_cycle = {r['profile__cycle']: r['n'] for r in Vote.objects.values('profile__cycle').annotate(n=Count('id'))}
+    par_cycle = [{'cycle': cycles.get(k, k), 'inscrits': ins_cycle[k], 'votants': vot_cycle.get(k, 0)}
+                 for k in sorted(ins_cycle, key=lambda k: -ins_cycle[k])]
+
+    empreinte = hashlib.sha256(
+        ('|'.join(f"{c['nom']}:{c['voix']}" for c in classement) + f"|{total_votes}|{inscrits}").encode()
+    ).hexdigest()[:16].upper()
+
+    maintenant = timezone.localtime()
+    pdf = pv_generator.build_pv_pdf({
+        'annee': getattr(settings, 'ACADEMIC_YEAR', '2026/2027'),
+        'periode': getattr(settings, 'ELECTION_PERIOD_LABEL', 'du 08/11/2026 à 10h00 au 09/11/2026 à 14h00'),
+        'edite_le': maintenant.strftime('%d/%m/%Y à %H:%M'),
+        'edite_par': request.user.get_full_name() or request.user.username,
+        'inscrits': inscrits, 'votants': total_votes, 'total_votes': total_votes,
+        'classement': classement, 'par_cycle': par_cycle, 'empreinte': empreinte,
+    })
+    resp = HttpResponse(pdf, content_type='application/pdf')
+    resp['Content-Disposition'] = f'attachment; filename="PV_election_AESP_{maintenant:%Y%m%d_%H%M}.pdf"'
+    return resp

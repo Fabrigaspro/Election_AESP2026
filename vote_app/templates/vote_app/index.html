@@ -1608,6 +1608,9 @@
                     </div>
                     <button type="button" id="toggleResultsVisibilityBtn" class="btn btn-primary"></button>
                 </div>
+                <a id="downloadPvBtn" class="btn btn-success" href="/api/election/pv/" download style="display:none; margin-bottom:16px;">
+                    <i class="fas fa-file-pdf"></i> <span>Télécharger le PV (PDF)</span>
+                </a>
                 <div id="resultsContainer"></div>
             </div>
 
@@ -1688,6 +1691,7 @@
   "⚪ Jamais connecté": "⚪ Never logged in",
   "Déjà connectés : {n}": "Already logged in: {n}",
   "S'est déjà connecté": "Has already logged in",
+  "Télécharger le PV (PDF)": "Download minutes (PDF)",
   "Jamais connecté": "Never logged in",
   "Résultats visibles par les étudiants": "Results visible to students",
   "Résultats masqués aux étudiants": "Results hidden from students",
@@ -3769,6 +3773,9 @@
         }
 
         function renderResultsVisibility() {
+            const pvBtn = document.getElementById('downloadPvBtn');
+            if (pvBtn) pvBtn.style.display = state.electionStatus === 'closed' ? 'inline-block' : 'none';
+
             renderPasswordLogin();
             const bar = document.getElementById('resultsVisibilityBar');
             if (!bar) return;
