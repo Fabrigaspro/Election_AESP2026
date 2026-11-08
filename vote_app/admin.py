@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import Profile, Candidate, ElectionState, Vote
 from django.utils.html import format_html
+from django.db import transaction
 
 # Personnalisation basique de l'interface
 admin.site.site_header = "ÉLECTION DU GOUVERNEUR AESP - Système de Vote"
@@ -89,3 +90,16 @@ class VoteAdmin(admin.ModelAdmin):
     search_fields = ('profile__user__username', 'profile__user__first_name', 'profile__user__last_name',
                      'profile__cycle', 'profile__specialite', 'candidate__nom', 'candidate__prenom')
     readonly_fields = ('voted_at',)
+
+    def delete_queryset(self, request, queryset):
+        """Suppression par lot : remet has_voted à False et recompte les votes."""
+        with transaction.atomic():
+            profile_ids = list(queryset.values_list('profile_id', flat=True))
+            candidate_ids = set(queryset.values_list('candidate_id', flat=True))
+
+            super().delete_queryset(request, queryset)
+
+            Profile.objects.filter(pk__in=profile_ids).update(has_voted=False)
+            for cid in candidate_ids:
+                Candidate.objects.filter(pk=cid).update(
+                    votes=Vote.objects.filter(candidate_id=cid).count())

@@ -658,19 +658,12 @@ def vote_view(request):
         candidate_id = data.get('candidate_id')
 
         try:
-            candidate = Candidate.objects.get(id=candidate_id)
-            candidate.votes += 1
-            candidate.save()
-
-            user_profile.has_voted = True
-            user_profile.save()
-
-            # Créer un vote
-            vote = Vote.objects.create(
-                profile=user_profile,
-                candidate=candidate,
-            )
-            vote.save()
+            with transaction.atomic():
+                candidate = Candidate.objects.get(id=candidate_id)
+                Vote.objects.create(profile=user_profile, candidate=candidate)
+                Profile.objects.filter(pk=user_profile.pk).update(has_voted=True)
+                Candidate.objects.filter(pk=candidate.pk).update(
+                    votes=Vote.objects.filter(candidate=candidate).count())
 
             return JsonResponse({'success': 'Vote enregistré !'})
         except Candidate.DoesNotExist:
