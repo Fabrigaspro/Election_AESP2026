@@ -85,7 +85,7 @@ class ElectionAdmin(admin.ModelAdmin):
 @admin.register(Vote)
 class VoteAdmin(admin.ModelAdmin):
     list_display = ('profile', 'profile__user__first_name', 'profile__cycle', 'profile__specialite', 'profile__niveau', 'candidate', 'voted_at')
-    list_filter = ('voted_at',)
+    list_filter = ('voted_at','profile__cycle', 'profile__specialite', 'profile__niveau', 'candidate')
     search_fields = ('profile__user__username', 'profile__user__first_name', 'profile__user__last_name',
                      'profile__cycle', 'profile__specialite', 'candidate__nom', 'candidate__prenom')
     readonly_fields = ('voted_at',)
