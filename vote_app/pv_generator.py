@@ -152,16 +152,12 @@ def build_pv_pdf(d):
                f"{maj}, avec <b>{g['voix']} voix</b> sur {total} suffrages exprimés, soit "
                f"<b>{_pct(g['voix'], total)}</b>.")
     s.append(Paragraph(txt, normal))
-    
+
     # ---------- 4. Observations ----------
     s.append(P("4. Observations", h2))
     s.append(P("Dépouillement réalisé automatiquement par la plateforme de vote en ligne. Chaque électeur "
                "n'a pu voter qu'une seule fois (un compte, un vote). Les inscriptions ont été validées "
-               "soit automatiquement après contrôle du reçu, soit manuellement par un administrateur. "
-               "Toute réclamation doit être adressée à la commission électorale.", normal))
-    s.append(Spacer(1, 4))
-    s.append(P("Observations complémentaires : " + "." * 120, normal))
-    s.append(P("." * 140, normal))
+               "soit automatiquement après contrôle du reçu, soit manuellement par un administrateur. ", normal))
 
     # ---------- Signatures ----------
     sig = Table(
