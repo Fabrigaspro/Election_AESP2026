@@ -883,6 +883,20 @@ def reset_election_view(request):
     
     return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
 
+def _find_static_file(rel_path):
+    """Cherche un fichier statique sur disque : via les finders (dev/debug),
+    puis dans STATIC_ROOT (production, après collectstatic)."""
+    path = finders.find(rel_path)
+    if path and os.path.isfile(path):
+        return path
+    static_root = getattr(settings, 'STATIC_ROOT', None)
+    if static_root:
+        candidate = os.path.join(static_root, rel_path)
+        if os.path.isfile(candidate):
+            return candidate
+    print(f"⚠️ Logo introuvable pour le PV : {rel_path}")
+    return None
+
 @login_required  # Génère le procès-verbal PDF des résultats
 def pv_pdf_view(request):
     if not is_user_admin(request.user):
@@ -930,8 +944,8 @@ def pv_pdf_view(request):
         'edite_par': request.user.get_full_name() or request.user.username,
         'inscrits': inscrits, 'votants': total_votes, 'total_votes': total_votes,
         'classement': classement, 'par_cycle': par_cycle, 'empreinte': empreinte,
-        'logo_iuget': finders.find('vote_app/images/IUGET.png'),
-        'logo_aesp': finders.find('vote_app/images/AESP.png'),
+        'logo_iuget': _find_static_file('vote_app/images/IUGET.png'),
+        'logo_aesp': _find_static_file('vote_app/images/AESP.png'),
     })
     resp = HttpResponse(pdf, content_type='application/pdf')
     resp['Content-Disposition'] = f'attachment; filename="PV_election_AESP_{maintenant:%Y%m%d_%H%M}.pdf"'

@@ -151,8 +151,8 @@ def build_pv_pdf(d):
                f"est proclamé(e) élu(e) Gouverneur(e) de l'AESP pour l'année académique {d['annee']}, "
                f"{maj}, avec <b>{g['voix']} voix</b> sur {total} suffrages exprimés, soit "
                f"<b>{_pct(g['voix'], total)}</b>.")
-    s.append(P(txt, normal))
-
+    s.append(Paragraph(txt, normal))
+    
     # ---------- 4. Observations ----------
     s.append(P("4. Observations", h2))
     s.append(P("Dépouillement réalisé automatiquement par la plateforme de vote en ligne. Chaque électeur "
