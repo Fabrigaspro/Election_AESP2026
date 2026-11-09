@@ -96,7 +96,7 @@ def build_pv_pdf(d):
     barre = Table([['']], colWidths=[17 * cm], rowHeights=[3])
     barre.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, -1), ORANGE)]))
     s += [barre, Spacer(1, 10)]
-    
+
     # ---------- Préambule ----------
     s.append(P(
         f"Le présent procès-verbal est établi à l'issue du scrutin pour l'élection du Gouverneur "
@@ -175,7 +175,7 @@ def build_pv_pdf(d):
                              ('BACKGROUND', (0, 0), (-1, 0), GRIS)]))
     cand = [[P('Candidat (ou son représentant)', cell_h), P('Signature', cell_h)]]
     for c in d['classement']:
-        cand.append([P(c['nom']+" "+c['prenom']), ''])
+        cand.append([P(c['nom']), ''])
     ct = tableau(cand, [9 * cm, 8 * cm])
     ct.setStyle(TableStyle([('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white]),
                             ('TOPPADDING', (0, 1), (-1, -1), 14), ('BOTTOMPADDING', (0, 1), (-1, -1), 14)]))
