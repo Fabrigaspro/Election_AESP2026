@@ -8,6 +8,7 @@ from cloudinary.uploader import destroy
 from django.utils import timezone
 from datetime import timedelta
 import secrets
+from django.db import models, transaction
 # Modèle pour étendre le modèle User de base de Django avec nos champs personnalisés
 class Profile(models.Model):
 
@@ -585,18 +586,32 @@ class Vote(models.Model):
         ordering = ['-voted_at']
     
     def save(self, *args, **kwargs):
-        self.candidate.save()
-        super().save(*args, **kwargs)  
+        old_candidate_id = old_profile_id = None
+        if self.pk:
+            old = Vote.objects.filter(pk=self.pk).values('candidate_id', 'profile_id').first()
+            if old:
+                old_candidate_id, old_profile_id = old['candidate_id'], old['profile_id']
+
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+
+            # Recompter le nouveau candidat ET l'ancien s'il a changé
+            for cid in {self.candidate_id, old_candidate_id} - {None}:
+                Candidate.objects.filter(pk=cid).update(
+                    votes=Vote.objects.filter(candidate_id=cid).count())
+
+            # Si l'électeur a changé : l'ancien redevient « n'a pas voté »
+            if old_profile_id and old_profile_id != self.profile_id:
+                Profile.objects.filter(pk=old_profile_id).update(has_voted=False)
+            Profile.objects.filter(pk=self.profile_id).update(has_voted=True)
 
     def delete(self, *args, **kwargs):
-        print("self.profile.has_voted : ", self.profile.has_voted)
-        self.profile.has_voted = False
-        self.profile.save()
-        print("self.profile.has_voted : ", self.profile.has_voted)
-
-        super().delete(*args, **kwargs)
-        self.candidate.save()
-
+        candidate_id, profile_id = self.candidate_id, self.profile_id
+        with transaction.atomic():
+            super().delete(*args, **kwargs)
+            Profile.objects.filter(pk=profile_id).update(has_voted=False)
+            Candidate.objects.filter(pk=candidate_id).update(
+                votes=Vote.objects.filter(candidate_id=candidate_id).count())
     
     def __str__(self):
         return f"{self.profile.matricule} a voté pour {self.candidate.name}"
