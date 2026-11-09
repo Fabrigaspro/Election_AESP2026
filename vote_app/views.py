@@ -23,6 +23,7 @@ import unicodedata
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.contrib.staticfiles import finders
 
 import hashlib
 from django.db.models import Count, Q
@@ -929,6 +930,8 @@ def pv_pdf_view(request):
         'edite_par': request.user.get_full_name() or request.user.username,
         'inscrits': inscrits, 'votants': total_votes, 'total_votes': total_votes,
         'classement': classement, 'par_cycle': par_cycle, 'empreinte': empreinte,
+        'logo_iuget': finders.find('vote_app/images/IUGET.png'),
+        'logo_aesp': finders.find('vote_app/images/AESP.png'),
     })
     resp = HttpResponse(pdf, content_type='application/pdf')
     resp['Content-Disposition'] = f'attachment; filename="PV_election_AESP_{maintenant:%Y%m%d_%H%M}.pdf"'

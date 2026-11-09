@@ -1,5 +1,6 @@
 from io import BytesIO
 from xml.sax.saxutils import escape
+from reportlab.platypus import Image
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
@@ -60,16 +61,42 @@ def build_pv_pdf(d):
     total, inscrits, votants = d['total_votes'], d['inscrits'], d['votants']
     s = []
 
-    # ---------- En-tête ----------
-    s += [P("ASSOCIATION DES ÉTUDIANTS DE SOUTH POLYTECH (AESP)", sous),
-          Spacer(1, 6),
-          P("PROCÈS-VERBAL DES RÉSULTATS", titre),
-          P(f"Élection du Gouverneur de l'AESP — Année académique {d['annee']}", sous),
-          Spacer(1, 4)]
+    # ---------- En-tête avec logos ----------
+    def _logo(path, max_h=1.8 * cm, max_w=3.2 * cm):
+        if not path:
+            return Paragraph('', normal)
+        try:
+            img = Image(path)
+            ratio = img.imageWidth / img.imageHeight
+            h = max_h
+            w = h * ratio
+            if w > max_w:
+                w = max_w
+                h = w / ratio
+            img.drawWidth, img.drawHeight = w, h
+            return img
+        except Exception:
+            return Paragraph('', normal)
+
+    bloc_titre = [P("ASSOCIATION DES ÉTUDIANTS DE SOUTH POLYTECH (AESP)", sous),
+                  Spacer(1, 4),
+                  P("PROCÈS-VERBAL DES RÉSULTATS", titre),
+                  P(f"Élection du Gouverneur de l'AESP — Année académique {d['annee']}", sous)]
+
+    entete = Table(
+        [[_logo(d.get('logo_iuget')), bloc_titre, _logo(d.get('logo_aesp'))]],
+        colWidths=[3.4 * cm, 10.2 * cm, 3.4 * cm])
+    entete.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+        ('ALIGN', (2, 0), (2, 0), 'RIGHT'),
+    ]))
+    s += [entete, Spacer(1, 6)]
+
     barre = Table([['']], colWidths=[17 * cm], rowHeights=[3])
     barre.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, -1), ORANGE)]))
     s += [barre, Spacer(1, 10)]
-
+    
     # ---------- Préambule ----------
     s.append(P(
         f"Le présent procès-verbal est établi à l'issue du scrutin pour l'élection du Gouverneur "
@@ -92,8 +119,8 @@ def build_pv_pdf(d):
                      extra=[('ROWBACKGROUNDS', (0, 0), (-1, -1), [colors.white, GRIS]),
                             ('FONTNAME', (0, 3), (-1, 3), 'Helvetica-Bold')]))
     s.append(Spacer(1, 4))
-    s.append(P("<i>Le système de vote en ligne n'enregistre pas de bulletins blancs ou nuls : "
-               "tout vote enregistré est un suffrage exprimé en faveur d'un candidat.</i>",
+    s.append(P("Le système de vote en ligne n'enregistre pas de bulletins blancs ou nuls : "
+               "tout vote enregistré est un suffrage exprimé en faveur d'un candidat.",
                ParagraphStyle('note', parent=cell, fontSize=8.5, textColor=colors.HexColor('#666666'))))
 
     # ---------- 2. Classement ----------
@@ -126,16 +153,8 @@ def build_pv_pdf(d):
                f"<b>{_pct(g['voix'], total)}</b>.")
     s.append(P(txt, normal))
 
-    # ---------- 4. Participation par cycle ----------
-    s.append(P("4. Participation par cycle", h2))
-    rows = [[P(h, cell_h) for h in ('Cycle', 'Inscrits', 'Votants', 'Participation')]]
-    for r in d['par_cycle']:
-        rows.append([P(r['cycle']), P(r['inscrits'], cell_c), P(r['votants'], cell_c),
-                     P(_pct(r['votants'], r['inscrits']), cell_c)])
-    s.append(tableau(rows, [7 * cm, 3 * cm, 3 * cm, 4 * cm]))
-
-    # ---------- 5. Observations ----------
-    s.append(P("5. Observations", h2))
+    # ---------- 4. Observations ----------
+    s.append(P("4. Observations", h2))
     s.append(P("Dépouillement réalisé automatiquement par la plateforme de vote en ligne. Chaque électeur "
                "n'a pu voter qu'une seule fois (un compte, un vote). Les inscriptions ont été validées "
                "soit automatiquement après contrôle du reçu, soit manuellement par un administrateur. "
@@ -146,9 +165,9 @@ def build_pv_pdf(d):
 
     # ---------- Signatures ----------
     sig = Table(
-        [[P('Le Président de la<br/>Commission électorale', cell_c),
-          P('Le Secrétaire', cell_c),
-          P("Le Représentant de<br/>l'administration", cell_c)],
+        [[P('Le Président de la Commission électorale', cell_c),
+          P('Responsable de la vie Estudiantine', cell_c),
+          P("Directeur de South Polytech", cell_c)],
          ['', '', '']],
         colWidths=[5.6 * cm] * 3, rowHeights=[None, 2.4 * cm])
     sig.setStyle(TableStyle([('BOX', (0, 0), (-1, -1), 0.5, colors.grey),
@@ -156,7 +175,7 @@ def build_pv_pdf(d):
                              ('BACKGROUND', (0, 0), (-1, 0), GRIS)]))
     cand = [[P('Candidat (ou son représentant)', cell_h), P('Signature', cell_h)]]
     for c in d['classement']:
-        cand.append([P(c['nom']), ''])
+        cand.append([P(c['nom']+" "+c['prenom']), ''])
     ct = tableau(cand, [9 * cm, 8 * cm])
     ct.setStyle(TableStyle([('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white]),
                             ('TOPPADDING', (0, 1), (-1, -1), 14), ('BOTTOMPADDING', (0, 1), (-1, -1), 14)]))
