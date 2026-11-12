@@ -6,6 +6,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Élection du Gouverneur AESP - South Polytech</title>
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#24284B">
+    <link rel="apple-touch-icon" href="{% static 'icons/icon-192.png' %}">
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/serviceworker.js');
+      }
+    </script>
     <style>
         /* --- Styles Généraux --- */
         :root {
